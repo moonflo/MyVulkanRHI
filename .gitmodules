@@ -1,0 +1,3 @@
+[submodule "External/src/glfw"]
+	path = External/src/glfw
+	url = https://github.com/moonflo/glfw

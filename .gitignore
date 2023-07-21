@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+build/CMakeFiles/199369631e74e802d0a0cd69a9afad67/generate.stamp.rule
+
+build
+External/build
+External/windows/share

@@ -1,0 +1,158 @@
+{
+    "files.defaultLanguage": "c++", // ctrl+N新建文件后默认的语言
+    "editor.formatOnType": true, // 输入分号(C/C++的语句结束标识)后自动格式化当前这一行的代码
+    "editor.acceptSuggestionOnCommitCharacter": true,
+    "editor.formatOnSave": true,
+    "editor.suggest.snippetsPreventQuickSuggestions": false, // clangd的snippets有很多的跳转点，不用这个就必须手动触发Intellisense了
+    "editor.acceptSuggestionOnEnter": "on", // 我个人的习惯，按回车时一定是真正的换行，只有tab才会接受Intellisense
+    // "editor.snippetSuggestions": "top", // （可选）snippets显示在补全列表顶端，默认是inline
+    "code-runner.runInTerminal": true, // 设置成false会在“输出”中输出，无法输入
+    "code-runner.saveFileBeforeRun": true, // run code前保存
+    "code-runner.preserveFocus": true, // 若为false，run code后光标会聚焦到终端上。如果需要频繁输入数据可设为false
+    "code-runner.clearPreviousOutput": false, // 每次run code前清空属于code runner的终端消息，默认false
+    "code-runner.ignoreSelection": true, // 默认为false，效果是鼠标选中一块代码后可以单独执行，但C是编译型语言，不适合这样用
+    "terminal.integrated.enableBell": true,
+    "code-runner.executorMap": {
+        "javascript": "node",
+        "java": "cd $dir && javac $fileName && java $fileNameWithoutExt",
+        "c": "cd $dir && gcc '$fileName' -o '$fileNameWithoutExt.exe' -Wall -g -O2 -static-libgcc -std=c11 -fexec-charset=GBK && &'$dir$fileNameWithoutExt'",
+        "cpp": "cd $dir && g++ $fileName -o $fileNameWithoutExt.exe -Wall -g -O2 -std=c++17 -static-libgcc -fexec-charset=GBK  && &$dir$fileNameWithoutExt" // 此处采用CBK编码输出为了输出中文不乱码
+    },
+    "C_Cpp.clang_format_sortIncludes": true,
+    "C_Cpp.default.compilerPath": "C:\\office_software\\mingw64\\bin\\clang.exe", // 格式化时调整include的顺序（按字母排序）
+    "clangd.fallbackFlags": [
+        // 增加项目自身头文件依赖path，因为使用vs2019编译不会生成compile_command.json文件，项目自己的头文件就不会找到
+        "-I${workspaceFolder}/Framework/Interface", // 项目根目录
+        "-I${workspaceFolder}/Framework/Common", // 项目根目录
+        "-I${workspaceFolder}/Framework/GeomMath",
+        "-I${workspaceFolder}/Framework/Parser",
+        "-I${workspaceFolder}/Framework/GeomMath/include",
+        "-I${workspaceFolder}/External/Windows/include",
+        "-I${workspaceFolder}/External/Windows/include/crossguid",
+        "-I${workspaceFolder}/External/Windows/include/libpng16",
+        "-I${workspaceFolder}/External/src/glad/include/",
+        "-I${workspaceFolder}/Platform/Windows",
+        "-I${workspaceFolder}/Platform/Linux",
+        "-I${workspaceFolder}/Platform/Empty",
+        "-I${workspaceFolder}/RHI",
+        "-I${workspaceFolder}"
+        // // VC_includePath
+        // "-ID:/Visual_Studio_IDE/VC/Tools/MSVC/14.33.31629/include",
+        // "-ID:/Visual_Studio_IDE/VC/Tools/MSVC/14.33.31629/atlmfc/include",
+        // "-ID:/Visual_Studio_IDE/VC/Auxiliary/VS/include",
+        // "-ID:/Visual_Studio_IDE/VC/Auxiliary/VS/UnitTest/include",
+        // // WindowsSDK_IncludePath
+        // "-IC:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt",
+        // "-IC:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um",
+        // "-IC:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared",
+        // "-IC:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt",
+        // "-IC:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+        // "-IC:/Program Files (x86)/Windows Kits/NETFXSDK/4.8/Include/um",
+        //"-I${workspaceFolder}/third_party/include" // 第三方依赖的头文件目录
+    ],
+    // 头部注释
+    "fileheader.customMade": {
+        // Author字段是文件的创建者 可以在specialOptions中更改特殊属性
+        // 公司项目和个人项目可以配置不同的用户名与邮箱 搜索: gitconfig includeIf  比如: https://ayase.moe/2021/03/09/customized-git-config/
+        // 自动提取当前git config中的: 用户名、邮箱
+        "Author": "git config user.name && git config user.email", // 同时获取用户名与邮箱
+        // "Author": "git config user.name", // 仅获取用户名
+        // "Author": "git config user.email", // 仅获取邮箱
+        // "Author": "OBKoro1", // 写死的固定值 不从git config中获取
+        "Date": "Do not edit", // 文件创建时间(不变)
+        // LastEditors、LastEditTime、FilePath将会自动更新 如果觉得时间更新的太频繁可以使用throttleTime(默认为1分钟)配置更改更新时间。
+        "LastEditors": "git config user.name && git config user.email", // 文件最后编辑者 与Author字段一致
+        // 由于编辑文件就会变更最后编辑时间，多人协作中合并的时候会导致merge
+        // 可以将时间颗粒度改为周、或者月，这样冲突就减少很多。搜索变更时间格式: dateFormat
+        "LastEditTime": "Do not edit", // 文件最后编辑时间
+        // 输出相对路径，类似: /文件夹名称/src/index.js
+        "FilePath": "Do not edit", // 文件在项目中的相对路径 自动更新
+        // 插件会自动将光标移动到Description选项中 方便输入 Description字段可以在specialOptions更改
+        "Description": "", // 介绍文件的作用、文件的入参、出参。
+        // custom_string_obkoro1~custom_string_obkoro100都可以输出自定义信息
+        // 可以设置多条自定义信息 设置个性签名、留下QQ、微信联系方式、输入空行等
+        "custom_string_obkoro1": "",
+        // 版权声明 保留文件所有权利 自动替换年份 获取git配置的用户名和邮箱
+        // 版权声明获取git配置, 与Author字段一致: ${git_name} ${git_email} ${git_name_email}
+        "custom_string_obkoro1_copyright": "Copyright (c) ${now_year} by ${git_name_email}, All Rights Reserved. "
+        // "custom_string_obkoro1_copyright": "Copyright (c) ${now_year} by 写死的公司名/用户名, All Rights Reserved. "
+    },
+    // 函数注释
+    "fileheader.cursorMode": {
+        "description": "", // 函数注释生成之后，光标移动到这里
+        "param": "", // param 开启函数参数自动提取 需要将光标放在函数行或者函数上方的空白行
+        "return": ""
+    },
+    "files.associations": {
+        "any": "cpp",
+        "array": "cpp",
+        "atomic": "cpp",
+        "bit": "cpp",
+        "*.tcc": "cpp",
+        "bitset": "cpp",
+        "cctype": "cpp",
+        "chrono": "cpp",
+        "cinttypes": "cpp",
+        "clocale": "cpp",
+        "cmath": "cpp",
+        "codecvt": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "condition_variable": "cpp",
+        "cstdarg": "cpp",
+        "cstddef": "cpp",
+        "cstdint": "cpp",
+        "cstdio": "cpp",
+        "cstdlib": "cpp",
+        "cstring": "cpp",
+        "ctime": "cpp",
+        "cwchar": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "exception": "cpp",
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "memory_resource": "cpp",
+        "numeric": "cpp",
+        "optional": "cpp",
+        "random": "cpp",
+        "ratio": "cpp",
+        "regex": "cpp",
+        "string_view": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "fstream": "cpp",
+        "initializer_list": "cpp",
+        "iomanip": "cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "mutex": "cpp",
+        "new": "cpp",
+        "numbers": "cpp",
+        "ostream": "cpp",
+        "semaphore": "cpp",
+        "sstream": "cpp",
+        "stdexcept": "cpp",
+        "stop_token": "cpp",
+        "streambuf": "cpp",
+        "thread": "cpp",
+        "cfenv": "cpp",
+        "typeinfo": "cpp",
+        "variant": "cpp"
+    },
+    "cmake.configureOnOpen": false
+}
