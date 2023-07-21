@@ -1,36 +1,37 @@
 #pragma once
 #include "VulkanConfig.h"
-#include <GLFW/glfw3.h>
 
-class Engine
-{
+class Engine {
 
-public:
-	Engine();
+   public:
+    Engine();
 
-	~Engine();
+    ~Engine();
 
-private:
-	// whether to print debug messages in functions
-	bool debugMode = true;
+   private:
+    // whether to print debug messages in functions
+    bool debugMode = true;
 
-	// glfw window parameters
-	int width{640};
-	int height{480};
-	GLFWwindow *window{nullptr};
+    // glfw window parameters
+    int width{640};
+    int height{480};
+    GLFWwindow* window{nullptr};
 
-	// vulkan instance
-	vk::Instance instance{nullptr};
+    // vulkan instance
+    vk::Instance instance{nullptr};
 
-	// glfw setup
-	/**
-		Build the GLFW window.
-	*/
-	void build_glfw_window();
+    // debug callback
+    vk::DebugUtilsMessengerEXT debugMessenger{nullptr};
 
-	// instance setup
-	/**
-		Create the Vulkan instance.
-	*/
-	void make_instance();
+    // dynamic instance dispatcher
+    vk::DispatchLoaderDynamic dldi;
+
+    // glfw setup
+    void build_glfw_window();
+
+    // instance setup
+    void make_instance();
+
+    // debug messenger
+    void make_debug_messenger();
 };

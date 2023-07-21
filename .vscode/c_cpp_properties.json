@@ -6,8 +6,8 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/RHI",
                 "${workspaceFolder}/RHI/Vulkan",
-                "${workspaceFolder}/External/Windows/include",
-                "${workspaceFolder}"
+                "${workspaceFolder}/External/Windows/include/**",
+                "${workspaceFolder}/External/Windows/include"
             ],
             "defines": [
                 "_DEBUG",

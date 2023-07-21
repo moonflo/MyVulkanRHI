@@ -1,7 +1,9 @@
 #pragma once
+
+// statically load vulkan library
 #include <vulkan/vulkan.hpp>
 /*
-* Including the prebuilt header from the lunarg sdk will load
+* Statically linking the prebuilt header from the lunarg sdk will load
 * most functions, but not all.
 *
 * Functions can also be dynamically loaded, using the call
@@ -18,6 +20,8 @@
 
 	We will look at this later, once we've created an instance and device.
 */
+
+#include <GLFW/glfw3.h>
 
 #include <iostream>
 #include <vector>
