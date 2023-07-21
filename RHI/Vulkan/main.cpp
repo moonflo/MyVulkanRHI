@@ -1,11 +1,10 @@
 #include "Engine.h"
 
-int main()
-{
+int main() {
 
-	Engine *graphicsEngine = new Engine();
+    Engine* graphicsEngine = new Engine();
 
-	delete graphicsEngine;
+    delete graphicsEngine;
 
-	return 0;
+    return 0;
 }
