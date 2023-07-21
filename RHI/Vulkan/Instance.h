@@ -106,18 +106,21 @@ namespace vkInit
 		*
 		* from vulkan_structs.hpp:
 		*
-		* InstanceCreateInfo( VULKAN_HPP_NAMESPACE::InstanceCreateFlags     flags_                 = {},
-											 const VULKAN_HPP_NAMESPACE::ApplicationInfo * pApplicationInfo_      = {},
-											 uint32_t                                      enabledLayerCount_     = {},
-											 const char * const *                          ppEnabledLayerNames_   = {},
-											 uint32_t                                      enabledExtensionCount_ = {},
-											 const char * const * ppEnabledExtensionNames_ = {} )
+		* InstanceCreateInfo(
+			VULKAN_HPP_NAMESPACE::InstanceCreateFlags     flags_                   = {},
+			const VULKAN_HPP_NAMESPACE::ApplicationInfo * pApplicationInfo_        = {},
+			uint32_t                                      enabledLayerCount_       = {},
+			const char * const *                          ppEnabledLayerNames_     = {},
+			uint32_t                                      enabledExtensionCount_   = {},
+			const char * const *                          ppEnabledExtensionNames_ = {}
+			)
 		*/
 		vk::InstanceCreateInfo createInfo = vk::InstanceCreateInfo(
 			vk::InstanceCreateFlags(),
 			&appInfo,
-			0, nullptr,													// enabled layers
-			static_cast<uint32_t>(extensions.size()), extensions.data() // enabled extensions
+			0, nullptr, // enabled layers
+			static_cast<uint32_t>(extensions.size()),
+			extensions.data() // enabled extensions
 		);
 
 		try
