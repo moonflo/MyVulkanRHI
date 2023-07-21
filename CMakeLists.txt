@@ -34,7 +34,7 @@ include_directories("${MYGE_EXTERNAL_ROOT}include")
 # include_directories("${MYGE_EXTERNAL_ROOT}include/libpng16")
 # include_directories("${MYGE_EXTERNAL_ROOT}include/crossguid")
 
-set(MYGE_EXTERNAL_LIBRARY_PATH ${MYGE_EXTERNAL_ROOT}lib/)
+set(MYGE_EXTERNAL_LIBRARY_PATH ${MYGE_EXTERNAL_ROOT}Lib/)
 find_library(GLFW_LIBRARY glfw3 PATHS ${MYGE_EXTERNAL_LIBRARY_PATH})
 # find_library(OPENGEX_LIBRARY OpenGEX PATHS ${MYGE_EXTERNAL_LIBRARY_PATH})
 # find_library(XG_LIBRARY crossguid-dgb PATHS ${MYGE_EXTERNAL_LIBRARY_PATH})
