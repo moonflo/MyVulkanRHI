@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "Device.h"
 #include "Instance.h"
 #include "Logging.h"
 
@@ -12,21 +13,21 @@ Engine::Engine() {
 
     make_instance();
 
-    make_debug_messenger();
+    make_device();
 }
 
 void Engine::build_glfw_window() {
 
-    // initialize glfw
+    //initialize glfw
     glfwInit();
 
-    // no default rendering client, we'll hook vulkan up
-    // to the window later
+    //no default rendering client, we'll hook vulkan up
+    //to the window later
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    // resizing breaks the swapchain, we'll disable it for now
+    //resizing breaks the swapchain, we'll disable it for now
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    // GLFWwindow* glfwCreateWindow (int width, int height, const char *title, GLFWmonitor *monitor, GLFWwindow *share)
+    //GLFWwindow* glfwCreateWindow (int width, int height, const char *title, GLFWmonitor *monitor, GLFWwindow *share)
     if (window =
             glfwCreateWindow(width, height, "ID Tech 12", nullptr, nullptr)) {
         if (debugMode) {
@@ -45,15 +46,14 @@ void Engine::make_instance() {
 
     instance = vkInit::make_instance(debugMode, "ID Tech 12");
     dldi = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+    if (debugMode) {
+        debugMessenger = vkInit::make_debug_messenger(instance, dldi);
+    }
 }
 
-void Engine::make_debug_messenger() {
+void Engine::make_device() {
 
-    if (!debugMode) {
-        return;
-    }
-
-    debugMessenger = vkInit::make_debug_messenger(instance, dldi);
+    physicalDevice = vkInit::choose_physical_device(instance, debugMode);
 }
 
 Engine::~Engine() {
@@ -62,15 +62,17 @@ Engine::~Engine() {
         std::cout << "Goodbye see you!\n";
     }
 
-    instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
+    if (debugMode) {
+        instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
+    }
     /*
 	* from vulkan_funcs.hpp:
-	*
+	* 
 	* void Instance::destroy( Optional<const VULKAN_HPP_NAMESPACE::AllocationCallbacks> allocator = nullptr,
-											Dispatch const & d = ::vk::getDispatchLoaderStatic())
+                                            Dispatch const & d = ::vk::getDispatchLoaderStatic())
 	*/
     instance.destroy();
 
-    // terminate glfw
+    //terminate glfw
     glfwTerminate();
 }

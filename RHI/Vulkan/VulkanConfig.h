@@ -24,4 +24,6 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <set>
+#include <string>
 #include <vector>

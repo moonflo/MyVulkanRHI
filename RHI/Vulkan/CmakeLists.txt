@@ -1,7 +1,5 @@
 add_executable(MyVulkanRHI
 Engine.cpp
-Instance.cpp
-Logging.cpp
 main.cpp)
 
 find_package(Vulkan REQUIRED)
