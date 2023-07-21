@@ -1,4 +1,6 @@
 # MyVulkanRHI
+## brief
+My vulkan RHI design playground, should enable as many functions as I can and try to merge them into my GameEngineFromStratch repo.
 ## Install
 1. Clone this repo (Make sure it's a clone but NOT download as ZIP file, for we have a submodule in this);
 2. Run build_all.bat for the initial install of all external dependencies;
