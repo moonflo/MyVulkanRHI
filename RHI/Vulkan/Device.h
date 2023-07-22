@@ -15,6 +15,21 @@
 namespace vkInit {
 
 /**
+		Holds the indices of the graphics and presentation queue families.
+	*/
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
+
+    /**
+			\returns whether all of the Queue family indices have been set.
+		*/
+    bool isComplete() {
+        return graphicsFamily.has_value() && presentFamily.has_value();
+    }
+};
+
+/**
 		Print out the properties of the given physical device.
 
 		\param device the physical device to investigate
@@ -108,11 +123,11 @@ bool checkDeviceExtensionSupport(
 }
 
 /**
-		Check whether the given physical device is suitable for the system.
+		Choose a physical device for the vulkan instance.
 
-		\param device the physical device to check.
-		\debug whether the system is running in debug mode.
-		\returns whether the device is suitable.
+		\param instance the vulkan instance to use
+		\param debug whether the system is running in debug mode
+		\returns the chosen physical device
 	*/
 bool isSuitable(const vk::PhysicalDevice& device, const bool debug) {
 
@@ -202,4 +217,186 @@ vk::PhysicalDevice choose_physical_device(const vk::Instance& instance,
     return nullptr;
 }
 
+/**
+		Find suitable queue family indices on the given physical device.
+
+		\param device the physical device to check
+		\param debug whether the system is running in debug mode
+		\returns a struct holding the queue family indices
+	*/
+QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device,
+                                     vk::SurfaceKHR surface, bool debug) {
+    QueueFamilyIndices indices;
+
+    std::vector<vk::QueueFamilyProperties> queueFamilies =
+        device.getQueueFamilyProperties();
+
+    if (debug) {
+        std::cout << "There are " << queueFamilies.size()
+                  << " queue families available on the system.\n";
+    }
+
+    int i = 0;
+    for (vk::QueueFamilyProperties queueFamily : queueFamilies) {
+
+        /*
+			* // Provided by VK_VERSION_1_0
+				typedef struct VkQueueFamilyProperties {
+				VkQueueFlags    queueFlags;
+				uint32_t        queueCount;
+				uint32_t        timestampValidBits;
+				VkExtent3D      minImageTransferGranularity;
+				} VkQueueFamilyProperties;
+
+				queueFlags is a bitmask of VkQueueFlagBits indicating capabilities of the queues in this queue family.
+
+				queueCount is the unsigned integer count of queues in this queue family. Each queue family must support 
+				at least one queue.
+
+				timestampValidBits is the unsigned integer count of meaningful bits in the timestamps written via 
+				vkCmdWriteTimestamp. The valid range for the count is 36..64 bits, or a value of 0, 
+				indicating no support for timestamps. Bits outside the valid range are guaranteed to be zeros.
+
+				minImageTransferGranularity is the minimum granularity supported for image transfer 
+				operations on the queues in this queue family.
+			*/
+
+        /*
+			* // Provided by VK_VERSION_1_0
+				typedef enum VkQueueFlagBits {
+				VK_QUEUE_GRAPHICS_BIT = 0x00000001,
+				VK_QUEUE_COMPUTE_BIT = 0x00000002,
+				VK_QUEUE_TRANSFER_BIT = 0x00000004,
+				VK_QUEUE_SPARSE_BINDING_BIT = 0x00000008,
+				} VkQueueFlagBits;
+			*/
+
+        if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+            indices.graphicsFamily = i;
+
+            if (debug) {
+                std::cout << "Queue Family " << i
+                          << " is suitable for graphics\n";
+            }
+        }
+
+        if (device.getSurfaceSupportKHR(i, surface)) {
+            indices.presentFamily = i;
+
+            if (debug) {
+                std::cout << "Queue Family " << i
+                          << " is suitable for presenting\n";
+            }
+        }
+
+        if (indices.isComplete()) {
+            break;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
+
+/**
+		Create a Vulkan device
+
+		\param physicalDevice the Physical Device to represent
+		\param debug whether the system is running in debug mode
+		\returns the created device
+	*/
+vk::Device create_logical_device(vk::PhysicalDevice physicalDevice,
+                                 vk::SurfaceKHR surface, bool debug) {
+
+    /*
+		* Create an abstraction around the GPU
+		*/
+
+    /*
+		* At time of creation, any required queues will also be created,
+		* so queue create info must be passed in.
+		*/
+
+    QueueFamilyIndices indices =
+        findQueueFamilies(physicalDevice, surface, debug);
+    std::vector<uint32_t> uniqueIndices;
+    uniqueIndices.push_back(indices.graphicsFamily.value());
+    if (indices.graphicsFamily.value() != indices.presentFamily.value()) {
+        uniqueIndices.push_back(indices.presentFamily.value());
+    }
+    /*
+		* VULKAN_HPP_CONSTEXPR DeviceQueueCreateInfo( VULKAN_HPP_NAMESPACE::DeviceQueueCreateFlags flags_            = {},
+                                                uint32_t                                     queueFamilyIndex_ = {},
+                                                uint32_t                                     queueCount_       = {},
+                                                const float * pQueuePriorities_ = {} ) VULKAN_HPP_NOEXCEPT
+		*/
+    std::vector<vk::DeviceQueueCreateInfo> queueCreateInfo;
+    float queuePriority = 1.0f;
+    for (uint32_t queueFamilyIndex : uniqueIndices) {
+        queueCreateInfo.push_back(vk::DeviceQueueCreateInfo(
+            vk::DeviceQueueCreateFlags(), queueFamilyIndex, 1, &queuePriority));
+    }
+
+    /*
+		* Device features must be requested before the device is abstracted,
+		* therefore we only pay for what we need.
+		*/
+
+    vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
+
+    /*
+		* VULKAN_HPP_CONSTEXPR DeviceCreateInfo( VULKAN_HPP_NAMESPACE::DeviceCreateFlags flags_                         = {},
+                                           uint32_t                                queueCreateInfoCount_          = {},
+                                           const VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo * pQueueCreateInfos_ = {},
+                                           uint32_t                                            enabledLayerCount_ = {},
+                                           const char * const * ppEnabledLayerNames_                              = {},
+                                           uint32_t             enabledExtensionCount_                            = {},
+                                           const char * const * ppEnabledExtensionNames_                          = {},
+                                           const VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures * pEnabledFeatures_ = {} )
+		*/
+    std::vector<const char*> enabledLayers;
+    if (debug) {
+        enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
+    }
+    vk::DeviceCreateInfo deviceInfo =
+        vk::DeviceCreateInfo(vk::DeviceCreateFlags(), queueCreateInfo.size(),
+                             queueCreateInfo.data(), enabledLayers.size(),
+                             enabledLayers.data(), 0, nullptr, &deviceFeatures);
+
+    try {
+        vk::Device device = physicalDevice.createDevice(deviceInfo);
+        if (debug) {
+            std::cout << "GPU has been successfully abstracted!\n";
+        }
+        return device;
+    } catch (vk::SystemError err) {
+        if (debug) {
+            std::cout << "Device creation failed!\n";
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
+
+/**
+    Get the graphics queue.
+
+    \param physicalDevice the physical device
+    \param device the logical device
+    \param debug whether the system is running in debug mode
+    \returns the physical device's graphics queue
+*/
+std::array<vk::Queue, 2> get_queues(vk::PhysicalDevice physicalDevice,
+                                    vk::Device device, vk::SurfaceKHR surface,
+                                    bool debug) {
+
+    QueueFamilyIndices indices =
+        findQueueFamilies(physicalDevice, surface, debug);
+
+    return {{
+        device.getQueue(indices.graphicsFamily.value(), 0),
+        device.getQueue(indices.presentFamily.value(), 0),
+    }};
+}
 }  // namespace vkInit

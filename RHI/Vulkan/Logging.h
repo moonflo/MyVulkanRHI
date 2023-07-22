@@ -78,8 +78,7 @@ vk::DebugUtilsMessengerEXT make_debug_messenger(
     vk::DebugUtilsMessengerCreateInfoEXT createInfo =
         vk::DebugUtilsMessengerCreateInfoEXT(
             vk::DebugUtilsMessengerCreateFlagsEXT(),
-            vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
-                vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
                 vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
             vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
                 vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |

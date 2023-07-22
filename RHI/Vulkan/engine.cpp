@@ -49,11 +49,27 @@ void Engine::make_instance() {
     if (debugMode) {
         debugMessenger = vkInit::make_debug_messenger(instance, dldi);
     }
+    VkSurfaceKHR c_style_surface;
+    if (glfwCreateWindowSurface(instance, window, nullptr, &c_style_surface) !=
+        VK_SUCCESS) {
+        if (debugMode) {
+            std::cout << "Failed to abstract glfw surface for Vulkan\n";
+        }
+    } else if (debugMode) {
+        std::cout << "Successfully abstracted glfw surface for Vulkan\n";
+    }
+    //copy constructor converts to hpp convention
+    surface = c_style_surface;
 }
 
 void Engine::make_device() {
 
     physicalDevice = vkInit::choose_physical_device(instance, debugMode);
+    device = vkInit::create_logical_device(physicalDevice, surface, debugMode);
+    std::array<vk::Queue, 2> queues =
+        vkInit::get_queues(physicalDevice, device, surface, debugMode);
+    graphicsQueue = queues[0];
+    presentQueue = queues[1];
 }
 
 Engine::~Engine() {
@@ -62,6 +78,9 @@ Engine::~Engine() {
         std::cout << "Goodbye see you!\n";
     }
 
+    device.destroy();
+
+    instance.destroySurfaceKHR(surface);
     if (debugMode) {
         instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
     }
