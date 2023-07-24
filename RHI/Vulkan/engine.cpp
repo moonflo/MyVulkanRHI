@@ -70,6 +70,12 @@ void Engine::make_device() {
         vkInit::get_queues(physicalDevice, device, surface, debugMode);
     graphicsQueue = queues[0];
     presentQueue = queues[1];
+    vkInit::SwapChainBundle bundle = vkInit::create_swapchain(
+        device, physicalDevice, surface, width, height, debugMode);
+    swapchain = bundle.swapchain;
+    swapchainImages = bundle.images;
+    swapchainFormat = bundle.format;
+    swapchainExtent = bundle.extent;
 }
 
 Engine::~Engine() {
@@ -78,6 +84,7 @@ Engine::~Engine() {
         std::cout << "Goodbye see you!\n";
     }
 
+    device.destroySwapchainKHR(swapchain);
     device.destroy();
 
     instance.destroySurfaceKHR(surface);

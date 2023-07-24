@@ -28,6 +28,10 @@ class Engine {
     vk::Device device{nullptr};
     vk::Queue graphicsQueue{nullptr};
     vk::Queue presentQueue{nullptr};
+    vk::SwapchainKHR swapchain{nullptr};
+    std::vector<vk::Image> swapchainImages{nullptr};
+    vk::Format swapchainFormat;
+    vk::Extent2D swapchainExtent;
 
     //glfw setup
     void build_glfw_window();

@@ -152,7 +152,9 @@
         "thread": "cpp",
         "cfenv": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "span": "cpp",
+        "typeindex": "cpp"
     },
     "cmake.configureOnOpen": false
 }
