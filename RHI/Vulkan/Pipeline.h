@@ -143,7 +143,7 @@ GraphicsPipelineOutBundle create_graphics_pipeline(
     vertexShaderInfo.flags = vk::PipelineShaderStageCreateFlags();
     vertexShaderInfo.stage = vk::ShaderStageFlagBits::eVertex;
     vertexShaderInfo.module = vertexShader;
-    vertexShaderInfo.pName = "main";
+    vertexShaderInfo.pName = "main";  // EntryPoint
     shaderStages.push_back(vertexShaderInfo);
 
     //Viewport and Scissor
