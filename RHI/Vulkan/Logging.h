@@ -359,4 +359,59 @@ This mode may result in visible tearing if rendering to the image is not timed c
     }
     return "none/undefined";
 }
+
+/**
+		Print out the properties of the given physical device.
+
+		\param device the physical device to investigate
+	*/
+void log_device_properties(const vk::PhysicalDevice& device) {
+    /*
+		* void vkGetPhysicalDeviceProperties(
+			VkPhysicalDevice                            physicalDevice,
+			VkPhysicalDeviceProperties*                 pProperties);
+		*/
+
+    vk::PhysicalDeviceProperties properties = device.getProperties();
+
+    /*
+		* typedef struct VkPhysicalDeviceProperties {
+			uint32_t                            apiVersion;
+			uint32_t                            driverVersion;
+			uint32_t                            vendorID;
+			uint32_t                            deviceID;
+			VkPhysicalDeviceType                deviceType;
+			char                                deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
+			uint8_t                             pipelineCacheUUID[VK_UUID_SIZE];
+			VkPhysicalDeviceLimits              limits;
+			VkPhysicalDeviceSparseProperties    sparseProperties;
+			} VkPhysicalDeviceProperties;
+		*/
+
+    std::cout << "Device name: " << properties.deviceName << '\n';
+
+    std::cout << "Device type: ";
+    switch (properties.deviceType) {
+
+        case (vk::PhysicalDeviceType::eCpu):
+            std::cout << "CPU\n";
+            break;
+
+        case (vk::PhysicalDeviceType::eDiscreteGpu):
+            std::cout << "Discrete GPU\n";
+            break;
+
+        case (vk::PhysicalDeviceType::eIntegratedGpu):
+            std::cout << "Integrated GPU\n";
+            break;
+
+        case (vk::PhysicalDeviceType::eVirtualGpu):
+            std::cout << "Virtual GPU\n";
+            break;
+
+        default:
+            std::cout << "Other\n";
+    }
+}
+
 }  // namespace vkInit

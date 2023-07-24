@@ -1,4 +1,5 @@
 #pragma once
+#include "Frame.h"
 #include "VulkanConfig.h"
 
 class Engine {
@@ -29,9 +30,14 @@ class Engine {
     vk::Queue graphicsQueue{nullptr};
     vk::Queue presentQueue{nullptr};
     vk::SwapchainKHR swapchain{nullptr};
-    std::vector<vk::Image> swapchainImages{nullptr};
+    std::vector<vkUtil::SwapChainFrame> swapchainFrames;
     vk::Format swapchainFormat;
     vk::Extent2D swapchainExtent;
+
+    //pipeline-related variables
+    vk::PipelineLayout pipelineLayout;
+    vk::RenderPass renderpass;
+    vk::Pipeline pipeline;
 
     //glfw setup
     void build_glfw_window();
@@ -41,4 +47,7 @@ class Engine {
 
     //device setup
     void make_device();
+
+    //pipeline setup
+    void make_pipeline();
 };

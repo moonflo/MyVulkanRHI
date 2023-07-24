@@ -2,6 +2,8 @@
 #include "Device.h"
 #include "Instance.h"
 #include "Logging.h"
+#include "Pipeline.h"
+#include "Swapchain.h"
 
 Engine::Engine() {
 
@@ -14,6 +16,8 @@ Engine::Engine() {
     make_instance();
 
     make_device();
+
+    make_pipeline();
 }
 
 void Engine::build_glfw_window() {
@@ -73,15 +77,40 @@ void Engine::make_device() {
     vkInit::SwapChainBundle bundle = vkInit::create_swapchain(
         device, physicalDevice, surface, width, height, debugMode);
     swapchain = bundle.swapchain;
-    swapchainImages = bundle.images;
+    swapchainFrames = bundle.frames;
     swapchainFormat = bundle.format;
     swapchainExtent = bundle.extent;
+}
+
+void Engine::make_pipeline() {
+
+    vkInit::GraphicsPipelineInBundle specification = {};
+    specification.device = device;
+    specification.vertexFilepath = "shaders/vertex.spv";
+    specification.fragmentFilepath = "shaders/fragment.spv";
+    specification.swapchainExtent = swapchainExtent;
+    specification.swapchainImageFormat = swapchainFormat;
+
+    vkInit::GraphicsPipelineOutBundle output =
+        vkInit::create_graphics_pipeline(specification, debugMode);
+
+    pipelineLayout = output.layout;
+    renderpass = output.renderpass;
+    pipeline = output.pipeline;
 }
 
 Engine::~Engine() {
 
     if (debugMode) {
         std::cout << "Goodbye see you!\n";
+    }
+
+    device.destroyPipeline(pipeline);
+    device.destroyPipelineLayout(pipelineLayout);
+    device.destroyRenderPass(renderpass);
+
+    for (vkUtil::SwapChainFrame frame : swapchainFrames) {
+        device.destroyImageView(frame.imageView);
     }
 
     device.destroySwapchainKHR(swapchain);
