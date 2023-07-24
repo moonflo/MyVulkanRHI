@@ -640,8 +640,9 @@ SwapChainBundle create_swapchain(vk::Device logicalDevice,
     vk::Extent2D extent =
         choose_swapchain_extent(width, height, support.capabilities);
 
-    uint32_t imageCount = std::min(support.capabilities.maxImageCount,
-                                   support.capabilities.minImageCount + 1);
+    uint32_t imageCount =
+        std::min(support.capabilities.maxImageCount,
+                 support.capabilities.minImageCount + 1);  // here we got 3
 
     /*
 		* VULKAN_HPP_CONSTEXPR SwapchainCreateInfoKHR(
