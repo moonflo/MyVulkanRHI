@@ -1,7 +1,7 @@
-prefix=F:/MyVulkanRHI/External/Windows
+prefix=F:/UEProjects/MyVulkanRHI/External/Windows
 exec_prefix=${prefix}
-includedir=F:/MyVulkanRHI/External/Windows/include
-libdir=F:/MyVulkanRHI/External/Windows/lib
+includedir=F:/UEProjects/MyVulkanRHI/External/Windows/include
+libdir=F:/UEProjects/MyVulkanRHI/External/Windows/lib
 
 Name: GLFW
 Description: A multi-platform library for OpenGL, window and input
