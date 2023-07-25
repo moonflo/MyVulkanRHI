@@ -1,10 +1,11 @@
-#include "Engine.h"
+#include "VulkanApplication.h"
 
 int main() {
 
-    Engine* graphicsEngine = new Engine();
+    App* myApp = new App(640, 480, true);
 
-    delete graphicsEngine;
+    myApp->run();
+    delete myApp;
 
     return 0;
 }

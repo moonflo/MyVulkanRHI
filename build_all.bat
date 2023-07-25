@@ -5,6 +5,10 @@ echo [INFO] ----------Building glfw...
 call build_glfw.bat
 popd
 
+pushd Asset\Shaders\
+call compile.bat
+popd
+
 echo [INFO] ----------Building project...
 mkdir build
 pushd build

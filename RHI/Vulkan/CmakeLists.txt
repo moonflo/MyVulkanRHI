@@ -1,6 +1,7 @@
 add_executable(MyVulkanRHI
 Engine.cpp
-main.cpp)
+main.cpp
+VulkanApplication.cpp)
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(MyVulkanRHI Vulkan::Vulkan ${GLFW_LIBRARY})

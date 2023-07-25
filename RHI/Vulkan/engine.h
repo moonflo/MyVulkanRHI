@@ -1,21 +1,24 @@
 #pragma once
+#include "Frame.h"
 #include "VulkanConfig.h"
 
 class Engine {
 
    public:
-    Engine();
+    Engine(int width, int height, GLFWwindow* window, bool debug);
 
     ~Engine();
+
+    void render();
 
    private:
     //whether to print debug messages in functions
     bool debugMode = true;
 
     //glfw-related variables
-    int width{640};
-    int height{480};
-    GLFWwindow* window{nullptr};
+    int width;
+    int height;
+    GLFWwindow* window;
 
     //instance-related variables
     vk::Instance instance{nullptr};
@@ -28,13 +31,35 @@ class Engine {
     vk::Device device{nullptr};
     vk::Queue graphicsQueue{nullptr};
     vk::Queue presentQueue{nullptr};
+    vk::SwapchainKHR swapchain{nullptr};
+    std::vector<vkUtil::SwapChainFrame> swapchainFrames;
+    vk::Format swapchainFormat;
+    vk::Extent2D swapchainExtent;
 
-    //glfw setup
-    void build_glfw_window();
+    //pipeline-related variables
+    vk::PipelineLayout pipelineLayout;
+    vk::RenderPass renderpass;
+    vk::Pipeline pipeline;
+
+    //Command-related variables
+    vk::CommandPool commandPool;
+    vk::CommandBuffer mainCommandBuffer;
+
+    //Synchronization objects
+    int maxFramesInFlight, frameNumber;
 
     //instance setup
     void make_instance();
 
     //device setup
     void make_device();
+
+    //pipeline setup
+    void make_pipeline();
+
+    //final setup steps
+    void finalize_setup();
+
+    void record_draw_commands(vk::CommandBuffer commandBuffer,
+                              uint32_t imageIndex);
 };

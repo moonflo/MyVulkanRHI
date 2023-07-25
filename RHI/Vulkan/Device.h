@@ -1,4 +1,6 @@
 #pragma once
+#include "Logging.h"
+#include "QueueFamilies.h"
 #include "VulkanConfig.h"
 
 /*
@@ -13,75 +15,6 @@
 */
 
 namespace vkInit {
-
-/**
-		Holds the indices of the graphics and presentation queue families.
-	*/
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    /**
-			\returns whether all of the Queue family indices have been set.
-		*/
-    bool isComplete() {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
-/**
-		Print out the properties of the given physical device.
-
-		\param device the physical device to investigate
-	*/
-void log_device_properties(const vk::PhysicalDevice& device) {
-    /*
-		* void vkGetPhysicalDeviceProperties(
-			VkPhysicalDevice                            physicalDevice,
-			VkPhysicalDeviceProperties*                 pProperties);
-		*/
-
-    vk::PhysicalDeviceProperties properties = device.getProperties();
-
-    /*
-		* typedef struct VkPhysicalDeviceProperties {
-			uint32_t                            apiVersion;
-			uint32_t                            driverVersion;
-			uint32_t                            vendorID;
-			uint32_t                            deviceID;
-			VkPhysicalDeviceType                deviceType;
-			char                                deviceName[VK_MAX_PHYSICAL_DEVICE_NAME_SIZE];
-			uint8_t                             pipelineCacheUUID[VK_UUID_SIZE];
-			VkPhysicalDeviceLimits              limits;
-			VkPhysicalDeviceSparseProperties    sparseProperties;
-			} VkPhysicalDeviceProperties;
-		*/
-
-    std::cout << "Device name: " << properties.deviceName << '\n';
-
-    std::cout << "Device type: ";
-    switch (properties.deviceType) {
-
-        case (vk::PhysicalDeviceType::eCpu):
-            std::cout << "CPU\n";
-            break;
-
-        case (vk::PhysicalDeviceType::eDiscreteGpu):
-            std::cout << "Discrete GPU\n";
-            break;
-
-        case (vk::PhysicalDeviceType::eIntegratedGpu):
-            std::cout << "Integrated GPU\n";
-            break;
-
-        case (vk::PhysicalDeviceType::eVirtualGpu):
-            std::cout << "Virtual GPU\n";
-            break;
-
-        default:
-            std::cout << "Other\n";
-    }
-}
 
 /**
 		Check whether the physical device can support the given extensions.
@@ -123,11 +56,11 @@ bool checkDeviceExtensionSupport(
 }
 
 /**
-		Choose a physical device for the vulkan instance.
+		Check whether the given physical device is suitable for use.
 
-		\param instance the vulkan instance to use
+		\param device the physical device
 		\param debug whether the system is running in debug mode
-		\returns the chosen physical device
+		\returns whether the device is suitable
 	*/
 bool isSuitable(const vk::PhysicalDevice& device, const bool debug) {
 
@@ -218,88 +151,6 @@ vk::PhysicalDevice choose_physical_device(const vk::Instance& instance,
 }
 
 /**
-		Find suitable queue family indices on the given physical device.
-
-		\param device the physical device to check
-		\param debug whether the system is running in debug mode
-		\returns a struct holding the queue family indices
-	*/
-QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device,
-                                     vk::SurfaceKHR surface, bool debug) {
-    QueueFamilyIndices indices;
-
-    std::vector<vk::QueueFamilyProperties> queueFamilies =
-        device.getQueueFamilyProperties();
-
-    if (debug) {
-        std::cout << "There are " << queueFamilies.size()
-                  << " queue families available on the system.\n";
-    }
-
-    int i = 0;
-    for (vk::QueueFamilyProperties queueFamily : queueFamilies) {
-
-        /*
-			* // Provided by VK_VERSION_1_0
-				typedef struct VkQueueFamilyProperties {
-				VkQueueFlags    queueFlags;
-				uint32_t        queueCount;
-				uint32_t        timestampValidBits;
-				VkExtent3D      minImageTransferGranularity;
-				} VkQueueFamilyProperties;
-
-				queueFlags is a bitmask of VkQueueFlagBits indicating capabilities of the queues in this queue family.
-
-				queueCount is the unsigned integer count of queues in this queue family. Each queue family must support 
-				at least one queue.
-
-				timestampValidBits is the unsigned integer count of meaningful bits in the timestamps written via 
-				vkCmdWriteTimestamp. The valid range for the count is 36..64 bits, or a value of 0, 
-				indicating no support for timestamps. Bits outside the valid range are guaranteed to be zeros.
-
-				minImageTransferGranularity is the minimum granularity supported for image transfer 
-				operations on the queues in this queue family.
-			*/
-
-        /*
-			* // Provided by VK_VERSION_1_0
-				typedef enum VkQueueFlagBits {
-				VK_QUEUE_GRAPHICS_BIT = 0x00000001,
-				VK_QUEUE_COMPUTE_BIT = 0x00000002,
-				VK_QUEUE_TRANSFER_BIT = 0x00000004,
-				VK_QUEUE_SPARSE_BINDING_BIT = 0x00000008,
-				} VkQueueFlagBits;
-			*/
-
-        if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
-            indices.graphicsFamily = i;
-
-            if (debug) {
-                std::cout << "Queue Family " << i
-                          << " is suitable for graphics\n";
-            }
-        }
-
-        if (device.getSurfaceSupportKHR(i, surface)) {
-            indices.presentFamily = i;
-
-            if (debug) {
-                std::cout << "Queue Family " << i
-                          << " is suitable for presenting\n";
-            }
-        }
-
-        if (indices.isComplete()) {
-            break;
-        }
-
-        i++;
-    }
-
-    return indices;
-}
-
-/**
 		Create a Vulkan device
 
 		\param physicalDevice the Physical Device to represent
@@ -318,8 +169,8 @@ vk::Device create_logical_device(vk::PhysicalDevice physicalDevice,
 		* so queue create info must be passed in.
 		*/
 
-    QueueFamilyIndices indices =
-        findQueueFamilies(physicalDevice, surface, debug);
+    vkUtil::QueueFamilyIndices indices =
+        vkUtil::findQueueFamilies(physicalDevice, surface, debug);
     std::vector<uint32_t> uniqueIndices;
     uniqueIndices.push_back(indices.graphicsFamily.value());
     if (indices.graphicsFamily.value() != indices.presentFamily.value()) {
@@ -346,6 +197,12 @@ vk::Device create_logical_device(vk::PhysicalDevice physicalDevice,
     vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
 
     /*
+		* Device extensions to be requested:
+		*/
+    std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+    /*
 		* VULKAN_HPP_CONSTEXPR DeviceCreateInfo( VULKAN_HPP_NAMESPACE::DeviceCreateFlags flags_                         = {},
                                            uint32_t                                queueCreateInfoCount_          = {},
                                            const VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo * pQueueCreateInfos_ = {},
@@ -359,10 +216,10 @@ vk::Device create_logical_device(vk::PhysicalDevice physicalDevice,
     if (debug) {
         enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
     }
-    vk::DeviceCreateInfo deviceInfo =
-        vk::DeviceCreateInfo(vk::DeviceCreateFlags(), queueCreateInfo.size(),
-                             queueCreateInfo.data(), enabledLayers.size(),
-                             enabledLayers.data(), 0, nullptr, &deviceFeatures);
+    vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
+        vk::DeviceCreateFlags(), queueCreateInfo.size(), queueCreateInfo.data(),
+        enabledLayers.size(), enabledLayers.data(), deviceExtensions.size(),
+        deviceExtensions.data(), &deviceFeatures);
 
     try {
         vk::Device device = physicalDevice.createDevice(deviceInfo);
@@ -380,23 +237,24 @@ vk::Device create_logical_device(vk::PhysicalDevice physicalDevice,
 }
 
 /**
-    Get the graphics queue.
+		Get the queues associated with the physical device.
 
-    \param physicalDevice the physical device
-    \param device the logical device
-    \param debug whether the system is running in debug mode
-    \returns the physical device's graphics queue
-*/
+		\param physicalDevice the physical device
+		\param device the logical device
+		\param debug whether the system is running in debug mode
+		\returns the queues
+	*/
 std::array<vk::Queue, 2> get_queues(vk::PhysicalDevice physicalDevice,
                                     vk::Device device, vk::SurfaceKHR surface,
                                     bool debug) {
 
-    QueueFamilyIndices indices =
-        findQueueFamilies(physicalDevice, surface, debug);
+    vkUtil::QueueFamilyIndices indices =
+        vkUtil::findQueueFamilies(physicalDevice, surface, debug);
 
     return {{
         device.getQueue(indices.graphicsFamily.value(), 0),
         device.getQueue(indices.presentFamily.value(), 0),
     }};
 }
+
 }  // namespace vkInit

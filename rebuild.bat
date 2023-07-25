@@ -1,3 +1,7 @@
+pushd Asset\Shaders\
+call compile.bat
+popd
+
 echo [INFO] ----------Building project...
 mkdir build
 pushd build
