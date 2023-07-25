@@ -56,6 +56,15 @@ void Engine::make_device() {
         vkInit::get_queues(physicalDevice, device, surface, debugMode);
     graphicsQueue = queues[0];
     presentQueue = queues[1];
+    make_swapchain();
+    frameNumber = 0;
+}
+
+/**
+* Make a swapchain
+*/
+void Engine::make_swapchain() {
+
     vkInit::SwapChainBundle bundle = vkInit::create_swapchain(
         device, physicalDevice, surface, width, height, debugMode);
     swapchain = bundle.swapchain;
@@ -63,7 +72,29 @@ void Engine::make_device() {
     swapchainFormat = bundle.format;
     swapchainExtent = bundle.extent;
     maxFramesInFlight = static_cast<int>(swapchainFrames.size());
-    frameNumber = 0;
+}
+
+/**
+* The swapchain must be recreated upon resize or minimization, among other cases
+*/
+void Engine::recreate_swapchain() {
+
+    width = 0;
+    height = 0;
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    device.waitIdle();
+
+    cleanup_swapchain();
+    make_swapchain();
+    make_framebuffers();
+    make_frame_sync_objects();
+    vkInit::commandBufferInputChunk commandBufferInput = {device, commandPool,
+                                                          swapchainFrames};
+    vkInit::make_frame_command_buffers(commandBufferInput, debugMode);
 }
 
 void Engine::make_pipeline() {
@@ -83,21 +114,22 @@ void Engine::make_pipeline() {
     pipeline = output.pipeline;
 }
 
-void Engine::finalize_setup() {
+/**
+* Make a framebuffer for each frame
+*/
+void Engine::make_framebuffers() {
 
     vkInit::framebufferInput frameBufferInput;
     frameBufferInput.device = device;
     frameBufferInput.renderpass = renderpass;
     frameBufferInput.swapchainExtent = swapchainExtent;
     vkInit::make_framebuffers(frameBufferInput, swapchainFrames, debugMode);
+}
 
-    commandPool =
-        vkInit::make_command_pool(device, physicalDevice, surface, debugMode);
-
-    vkInit::commandBufferInputChunk commandBufferInput = {device, commandPool,
-                                                          swapchainFrames};
-    mainCommandBuffer =
-        vkInit::make_command_buffers(commandBufferInput, debugMode);
+/**
+* Make synchronization objects for each frame
+*/
+void Engine::make_frame_sync_objects() {
 
     for (vkUtil::SwapChainFrame& frame : swapchainFrames) {
         frame.imageAvailable = vkInit::make_semaphore(device, debugMode);
@@ -106,8 +138,24 @@ void Engine::finalize_setup() {
     }
 }
 
+void Engine::finalize_setup() {
+
+    make_framebuffers();
+
+    commandPool =
+        vkInit::make_command_pool(device, physicalDevice, surface, debugMode);
+
+    vkInit::commandBufferInputChunk commandBufferInput = {device, commandPool,
+                                                          swapchainFrames};
+    mainCommandBuffer =
+        vkInit::make_command_buffer(commandBufferInput, debugMode);
+    vkInit::make_frame_command_buffers(commandBufferInput, debugMode);
+
+    make_frame_sync_objects();
+}
+
 void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
-                                  uint32_t imageIndex) {
+                                  uint32_t imageIndex, Scene* scene) {
 
     vk::CommandBufferBeginInfo beginInfo = {};
 
@@ -136,7 +184,17 @@ void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-    commandBuffer.draw(3, 1, 0, 0);
+    for (glm::vec3 position : scene->trianglePositions) {
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+        vkUtil::ObjectData objectData;
+        objectData.model = model;
+        commandBuffer.pushConstants(pipelineLayout,
+                                    vk::ShaderStageFlagBits::eVertex, 0,
+                                    sizeof(objectData), &objectData);
+
+        commandBuffer.draw(3, 1, 0, 0);
+    }
 
     commandBuffer.endRenderPass();
 
@@ -150,26 +208,37 @@ void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
     }
 }
 
-void Engine::render() {
+void Engine::render(Scene* scene) {
 
     device.waitForFences(1, &(swapchainFrames[frameNumber].inFlight), VK_TRUE,
                          UINT64_MAX);
     device.resetFences(1, &(swapchainFrames[frameNumber].inFlight));
 
     //acquireNextImageKHR(vk::SwapChainKHR, timeout, semaphore_to_signal, fence)
-    uint32_t imageIndex{
-        device
-            .acquireNextImageKHR(swapchain, UINT64_MAX,
-                                 swapchainFrames[frameNumber].imageAvailable,
-                                 nullptr)
-            .value};
+    uint32_t imageIndex;
+    try {
+        vk::ResultValue acquire = device.acquireNextImageKHR(
+            swapchain, UINT64_MAX, swapchainFrames[frameNumber].imageAvailable,
+            nullptr);
+        imageIndex = acquire.value;
+    } catch (vk::OutOfDateKHRError error) {
+        std::cout << "Recreate" << std::endl;
+        recreate_swapchain();
+        return;
+    } catch (vk::IncompatibleDisplayKHRError error) {
+        std::cout << "Recreate" << std::endl;
+        recreate_swapchain();
+        return;
+    } catch (vk::SystemError error) {
+        std::cout << "Failed to acquire swapchain image!" << std::endl;
+    }
 
     vk::CommandBuffer commandBuffer =
         swapchainFrames[frameNumber].commandBuffer;
 
     commandBuffer.reset();
 
-    record_draw_commands(commandBuffer, imageIndex);
+    record_draw_commands(commandBuffer, imageIndex, scene);
 
     vk::SubmitInfo submitInfo = {};
 
@@ -208,9 +277,37 @@ void Engine::render() {
 
     presentInfo.pImageIndices = &imageIndex;
 
-    presentQueue.presentKHR(presentInfo);
+    vk::Result present;
+
+    try {
+        present = presentQueue.presentKHR(presentInfo);
+    } catch (vk::OutOfDateKHRError error) {
+        present = vk::Result::eErrorOutOfDateKHR;
+    }
+
+    if (present == vk::Result::eErrorOutOfDateKHR ||
+        present == vk::Result::eSuboptimalKHR) {
+        std::cout << "Recreate" << std::endl;
+        recreate_swapchain();
+        return;
+    }
 
     frameNumber = (frameNumber + 1) % maxFramesInFlight;
+}
+
+/**
+* Free the memory associated with the swapchain objects
+*/
+void Engine::cleanup_swapchain() {
+
+    for (vkUtil::SwapChainFrame frame : swapchainFrames) {
+        device.destroyImageView(frame.imageView);
+        device.destroyFramebuffer(frame.framebuffer);
+        device.destroyFence(frame.inFlight);
+        device.destroySemaphore(frame.imageAvailable);
+        device.destroySemaphore(frame.renderFinished);
+    }
+    device.destroySwapchainKHR(swapchain);
 }
 
 Engine::~Engine() {
@@ -227,15 +324,8 @@ Engine::~Engine() {
     device.destroyPipelineLayout(pipelineLayout);
     device.destroyRenderPass(renderpass);
 
-    for (vkUtil::SwapChainFrame frame : swapchainFrames) {
-        device.destroyImageView(frame.imageView);
-        device.destroyFramebuffer(frame.framebuffer);
-        device.destroyFence(frame.inFlight);
-        device.destroySemaphore(frame.imageAvailable);
-        device.destroySemaphore(frame.renderFinished);
-    }
+    cleanup_swapchain();
 
-    device.destroySwapchainKHR(swapchain);
     device.destroy();
 
     instance.destroySurfaceKHR(surface);

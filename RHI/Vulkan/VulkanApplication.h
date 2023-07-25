@@ -7,6 +7,7 @@ class App {
    private:
     Engine* graphicsEngine;
     GLFWwindow* window;
+    Scene* scene;
 
     double lastTime, currentTime;
     int numFrames;

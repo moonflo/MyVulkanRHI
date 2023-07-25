@@ -33,7 +33,6 @@ vk::CommandPool make_command_pool(vk::Device device,
     vk::CommandPoolCreateInfo poolInfo;
     poolInfo.flags = vk::CommandPoolCreateFlags() |
                      vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-    // 允许独立地重设指令缓存
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
     try {
@@ -49,14 +48,48 @@ vk::CommandPool make_command_pool(vk::Device device,
 }
 
 /**
-		Make a command buffer for each swapchain frame and return a main command buffer.
+		Make a main command buffer.
 
 		\param inputChunk the required input info
 		\param debug whether the system is running in debug mode
 		\returns the main command buffer
 	*/
-vk::CommandBuffer make_command_buffers(commandBufferInputChunk inputChunk,
-                                       bool debug) {
+vk::CommandBuffer make_command_buffer(commandBufferInputChunk inputChunk,
+                                      bool debug) {
+
+    vk::CommandBufferAllocateInfo allocInfo = {};
+    allocInfo.commandPool = inputChunk.commandPool;
+    allocInfo.level = vk::CommandBufferLevel::ePrimary;
+    allocInfo.commandBufferCount = 1;
+
+    //Make a "main" command buffer for the engine
+    try {
+        vk::CommandBuffer commandBuffer =
+            inputChunk.device.allocateCommandBuffers(allocInfo)[0];
+
+        if (debug) {
+            std::cout << "Allocated main command buffer " << std::endl;
+        }
+
+        return commandBuffer;
+    } catch (vk::SystemError err) {
+
+        if (debug) {
+            std::cout << "Failed to allocate main command buffer " << std::endl;
+        }
+
+        return nullptr;
+    }
+}
+
+/**
+	* Make a command buffer for each frame
+	*
+	* @param	inputChunk the various fields
+	* @param	debug whether to print extra information
+	*/
+void make_frame_command_buffers(commandBufferInputChunk inputChunk,
+                                bool debug) {
 
     vk::CommandBufferAllocateInfo allocInfo = {};
     allocInfo.commandPool = inputChunk.commandPool;
@@ -80,25 +113,6 @@ vk::CommandBuffer make_command_buffers(commandBufferInputChunk inputChunk,
                           << std::endl;
             }
         }
-    }
-
-    //Make a "main" command buffer for the engine
-    try {
-        vk::CommandBuffer commandBuffer =
-            inputChunk.device.allocateCommandBuffers(allocInfo)[0];
-
-        if (debug) {
-            std::cout << "Allocated main command buffer " << std::endl;
-        }
-
-        return commandBuffer;
-    } catch (vk::SystemError err) {
-
-        if (debug) {
-            std::cout << "Failed to allocate main command buffer " << std::endl;
-        }
-
-        return nullptr;
     }
 }
 }  // namespace vkInit

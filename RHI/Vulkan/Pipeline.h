@@ -1,4 +1,5 @@
 #pragma once
+#include "RenderStructs.h"
 #include "Shaders.h"
 #include "VulkanConfig.h"
 
@@ -38,7 +39,14 @@ vk::PipelineLayout make_pipeline_layout(vk::Device device, bool debug) {
     vk::PipelineLayoutCreateInfo layoutInfo;
     layoutInfo.flags = vk::PipelineLayoutCreateFlags();
     layoutInfo.setLayoutCount = 0;
-    layoutInfo.pushConstantRangeCount = 0;
+
+    layoutInfo.pushConstantRangeCount = 1;
+    vk::PushConstantRange pushConstantInfo;
+    pushConstantInfo.offset = 0;
+    pushConstantInfo.size = sizeof(vkUtil::ObjectData);
+    pushConstantInfo.stageFlags = vk::ShaderStageFlagBits::eVertex;
+    layoutInfo.pPushConstantRanges = &pushConstantInfo;
+
     try {
         return device.createPipelineLayout(layoutInfo);
     } catch (vk::SystemError err) {

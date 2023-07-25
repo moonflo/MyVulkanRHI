@@ -1,5 +1,6 @@
 #pragma once
 #include "Frame.h"
+#include "Scene.h"
 #include "VulkanConfig.h"
 
 class Engine {
@@ -9,7 +10,7 @@ class Engine {
 
     ~Engine();
 
-    void render();
+    void render(Scene* scene);
 
    private:
     //whether to print debug messages in functions
@@ -53,13 +54,20 @@ class Engine {
 
     //device setup
     void make_device();
+    void make_swapchain();
+    void recreate_swapchain();
 
     //pipeline setup
     void make_pipeline();
 
     //final setup steps
     void finalize_setup();
+    void make_framebuffers();
+    void make_frame_sync_objects();
 
     void record_draw_commands(vk::CommandBuffer commandBuffer,
-                              uint32_t imageIndex);
+                              uint32_t imageIndex, Scene* scene);
+
+    //Cleanup functions
+    void cleanup_swapchain();
 };
