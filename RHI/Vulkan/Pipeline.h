@@ -154,25 +154,21 @@ GraphicsPipelineOutBundle create_graphics_pipeline(
     vertexShaderInfo.pName = "main";
     shaderStages.push_back(vertexShaderInfo);
 
-    //Viewport and Scissor
-    vk::Viewport viewport = {};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)specification.swapchainExtent.width;
-    viewport.height = (float)specification.swapchainExtent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vk::Rect2D scissor = {};
-    scissor.offset.x = 0.0f;
-    scissor.offset.y = 0.0f;
-    scissor.extent = specification.swapchainExtent;
-    vk::PipelineViewportStateCreateInfo viewportState = {};
+    // dynamicStates viewport and scissor
+    std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
+                                                   vk::DynamicState::eScissor};
+    vk::PipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.flags = vk::PipelineDynamicStateCreateFlags();
+    dynamicState.dynamicStateCount =
+        static_cast<uint32_t>(dynamicStates.size());
+    dynamicState.pDynamicStates = dynamicStates.data();
+
+    vk::PipelineViewportStateCreateInfo viewportState{};
     viewportState.flags = vk::PipelineViewportStateCreateFlags();
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &viewport;
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &scissor;
     pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pDynamicState = &dynamicState;
 
     //Rasterizer
     vk::PipelineRasterizationStateCreateInfo rasterizer = {};

@@ -106,8 +106,8 @@ void Engine::make_pipeline() {
     specification.swapchainExtent = swapchainExtent;
     specification.swapchainImageFormat = swapchainFormat;
 
-    vkInit::GraphicsPipelineOutBundle output =
-        vkInit::create_graphics_pipeline(specification, debugMode);
+    vkInit::GraphicsPipelineOutBundle output = vkInit::create_graphics_pipeline(
+        mainCommandBuffer, specification, debugMode);
 
     pipelineLayout = output.layout;
     renderpass = output.renderpass;
@@ -184,6 +184,24 @@ void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
+    // start draw call
+    //  reset viewport and scissor
+    vk::Viewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)swapchainExtent.width;
+    viewport.height = (float)swapchainExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vk::Rect2D scissor{};
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent = swapchainExtent;
+    // setting viewport and scissor
+    commandBuffer.setViewport(0, 1, &viewport);
+    commandBuffer.setScissor(0, 1, &scissor);
+
+    // render
     for (glm::vec3 position : scene->trianglePositions) {
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
