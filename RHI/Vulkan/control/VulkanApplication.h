@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine.h"
+#include "Scene.h"
 #include "VulkanConfig.h"
 
 class App {
@@ -13,7 +14,7 @@ class App {
     int numFrames;
     float frameTime;
 
-    void build_glfw_window(int width, int height, bool debugMode);
+    void build_glfw_window(int width, int height);
 
     void calculateFrameRate();
 

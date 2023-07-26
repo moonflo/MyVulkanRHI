@@ -8,16 +8,13 @@
 #include "Swapchain.h"
 #include "Sync.h"
 
-Engine::Engine(int width, int height, GLFWwindow* window, bool debug) {
+Engine::Engine(int width, int height, GLFWwindow* window) {
 
     this->width = width;
     this->height = height;
     this->window = window;
-    debugMode = debug;
 
-    if (debugMode) {
-        std::cout << "Making a graphics engine\n";
-    }
+    vkLogging::Logger::get_logger()->print("Making a graphics engine...");
 
     make_instance();
 
@@ -26,23 +23,25 @@ Engine::Engine(int width, int height, GLFWwindow* window, bool debug) {
     make_pipeline();
 
     finalize_setup();
+
+    make_assets();
 }
 
 void Engine::make_instance() {
 
-    instance = vkInit::make_instance(debugMode, "ID Tech 12");
+    instance = vkInit::make_instance("ID Tech 12");
     dldi = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
-    if (debugMode) {
-        debugMessenger = vkInit::make_debug_messenger(instance, dldi);
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
+        debugMessenger = vkLogging::make_debug_messenger(instance, dldi);
     }
     VkSurfaceKHR c_style_surface;
     if (glfwCreateWindowSurface(instance, window, nullptr, &c_style_surface) !=
         VK_SUCCESS) {
-        if (debugMode) {
-            std::cout << "Failed to abstract glfw surface for Vulkan\n";
-        }
-    } else if (debugMode) {
-        std::cout << "Successfully abstracted glfw surface for Vulkan\n";
+        vkLogging::Logger::get_logger()->print(
+            "Failed to abstract glfw surface for Vulkan.");
+    } else {
+        vkLogging::Logger::get_logger()->print(
+            "Successfully abstracted glfw surface for Vulkan.");
     }
     //copy constructor converts to hpp convention
     surface = c_style_surface;
@@ -50,10 +49,10 @@ void Engine::make_instance() {
 
 void Engine::make_device() {
 
-    physicalDevice = vkInit::choose_physical_device(instance, debugMode);
-    device = vkInit::create_logical_device(physicalDevice, surface, debugMode);
+    physicalDevice = vkInit::choose_physical_device(instance);
+    device = vkInit::create_logical_device(physicalDevice, surface);
     std::array<vk::Queue, 2> queues =
-        vkInit::get_queues(physicalDevice, device, surface, debugMode);
+        vkInit::get_queues(physicalDevice, device, surface);
     graphicsQueue = queues[0];
     presentQueue = queues[1];
     make_swapchain();
@@ -66,7 +65,7 @@ void Engine::make_device() {
 void Engine::make_swapchain() {
 
     vkInit::SwapChainBundle bundle = vkInit::create_swapchain(
-        device, physicalDevice, surface, width, height, debugMode);
+        device, physicalDevice, surface, width, height);
     swapchain = bundle.swapchain;
     swapchainFrames = bundle.frames;
     swapchainFormat = bundle.format;
@@ -94,7 +93,7 @@ void Engine::recreate_swapchain() {
     make_frame_sync_objects();
     vkInit::commandBufferInputChunk commandBufferInput = {device, commandPool,
                                                           swapchainFrames};
-    vkInit::make_frame_command_buffers(commandBufferInput, debugMode);
+    vkInit::make_frame_command_buffers(commandBufferInput);
 }
 
 void Engine::make_pipeline() {
@@ -106,8 +105,8 @@ void Engine::make_pipeline() {
     specification.swapchainExtent = swapchainExtent;
     specification.swapchainImageFormat = swapchainFormat;
 
-    vkInit::GraphicsPipelineOutBundle output = vkInit::create_graphics_pipeline(
-        mainCommandBuffer, specification, debugMode);
+    vkInit::GraphicsPipelineOutBundle output =
+        vkInit::create_graphics_pipeline(specification);
 
     pipelineLayout = output.layout;
     renderpass = output.renderpass;
@@ -123,7 +122,7 @@ void Engine::make_framebuffers() {
     frameBufferInput.device = device;
     frameBufferInput.renderpass = renderpass;
     frameBufferInput.swapchainExtent = swapchainExtent;
-    vkInit::make_framebuffers(frameBufferInput, swapchainFrames, debugMode);
+    vkInit::make_framebuffers(frameBufferInput, swapchainFrames);
 }
 
 /**
@@ -132,9 +131,9 @@ void Engine::make_framebuffers() {
 void Engine::make_frame_sync_objects() {
 
     for (vkUtil::SwapChainFrame& frame : swapchainFrames) {
-        frame.imageAvailable = vkInit::make_semaphore(device, debugMode);
-        frame.renderFinished = vkInit::make_semaphore(device, debugMode);
-        frame.inFlight = vkInit::make_fence(device, debugMode);
+        frame.imageAvailable = vkInit::make_semaphore(device);
+        frame.renderFinished = vkInit::make_semaphore(device);
+        frame.inFlight = vkInit::make_fence(device);
     }
 }
 
@@ -142,16 +141,62 @@ void Engine::finalize_setup() {
 
     make_framebuffers();
 
-    commandPool =
-        vkInit::make_command_pool(device, physicalDevice, surface, debugMode);
+    commandPool = vkInit::make_command_pool(device, physicalDevice, surface);
 
     vkInit::commandBufferInputChunk commandBufferInput = {device, commandPool,
                                                           swapchainFrames};
-    mainCommandBuffer =
-        vkInit::make_command_buffer(commandBufferInput, debugMode);
-    vkInit::make_frame_command_buffers(commandBufferInput, debugMode);
+    mainCommandBuffer = vkInit::make_command_buffer(commandBufferInput);
+    vkInit::make_frame_command_buffers(commandBufferInput);
 
     make_frame_sync_objects();
+}
+
+void Engine::make_assets() {
+
+    meshes = new VertexMenagerie();
+
+    std::vector<float> vertices = {{0.0f, -0.05f, 0.0f, 1.0f, 0.0f, 0.05f,
+                                    0.05f, 0.0f, 1.0f, 0.0f, -0.05f, 0.05f,
+                                    0.0f, 1.0f, 0.0f}};
+    meshTypes type = meshTypes::TRIANGLE;
+    meshes->consume(type, vertices);
+
+    vertices = {{-0.05f, 0.05f,  1.0f,  0.0f,   0.0f,  -0.05f, -0.05f, 1.0f,
+                 0.0f,   0.0f,   0.05f, -0.05f, 1.0f,  0.0f,   0.0f,   0.05f,
+                 -0.05f, 1.0f,   0.0f,  0.0f,   0.05f, 0.05f,  1.0f,   0.0f,
+                 0.0f,   -0.05f, 0.05f, 1.0f,   0.0f,  0.0f}};
+    type = meshTypes::SQUARE;
+    meshes->consume(type, vertices);
+
+    vertices = {
+        {-0.05f, -0.025f, 0.0f, 0.0f, 1.0f, -0.02f, -0.025f, 0.0f, 0.0f, 1.0f,
+         -0.03f, 0.0f,    0.0f, 0.0f, 1.0f, -0.02f, -0.025f, 0.0f, 0.0f, 1.0f,
+         0.0f,   -0.05f,  0.0f, 0.0f, 1.0f, 0.02f,  -0.025f, 0.0f, 0.0f, 1.0f,
+         -0.03f, 0.0f,    0.0f, 0.0f, 1.0f, -0.02f, -0.025f, 0.0f, 0.0f, 1.0f,
+         0.02f,  -0.025f, 0.0f, 0.0f, 1.0f, 0.02f,  -0.025f, 0.0f, 0.0f, 1.0f,
+         0.05f,  -0.025f, 0.0f, 0.0f, 1.0f, 0.03f,  0.0f,    0.0f, 0.0f, 1.0f,
+         -0.03f, 0.0f,    0.0f, 0.0f, 1.0f, 0.02f,  -0.025f, 0.0f, 0.0f, 1.0f,
+         0.03f,  0.0f,    0.0f, 0.0f, 1.0f, 0.03f,  0.0f,    0.0f, 0.0f, 1.0f,
+         0.04f,  0.05f,   0.0f, 0.0f, 1.0f, 0.0f,   0.01f,   0.0f, 0.0f, 1.0f,
+         -0.03f, 0.0f,    0.0f, 0.0f, 1.0f, 0.03f,  0.0f,    0.0f, 0.0f, 1.0f,
+         0.0f,   0.01f,   0.0f, 0.0f, 1.0f, -0.03f, 0.0f,    0.0f, 0.0f, 1.0f,
+         0.0f,   0.01f,   0.0f, 0.0f, 1.0f, -0.04f, 0.05f,   0.0f, 0.0f, 1.0f}};
+    type = meshTypes::STAR;
+    meshes->consume(type, vertices);
+
+    vertexBufferFinalizationChunk finalizationInfo;
+    finalizationInfo.logicalDevice = device;
+    finalizationInfo.physicalDevice = physicalDevice;
+    finalizationInfo.commandBuffer = mainCommandBuffer;
+    finalizationInfo.queue = graphicsQueue;
+    meshes->finalize(finalizationInfo);
+}
+
+void Engine::prepare_scene(vk::CommandBuffer commandBuffer) {
+
+    vk::Buffer vertexBuffers[] = {meshes->vertexBuffer.buffer};
+    vk::DeviceSize offsets[] = {0};
+    commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 }
 
 void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
@@ -162,10 +207,8 @@ void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
     try {
         commandBuffer.begin(beginInfo);
     } catch (vk::SystemError err) {
-        if (debugMode) {
-            std::cout << "Failed to begin recording command buffer!"
-                      << std::endl;
-        }
+        vkLogging::Logger::get_logger()->print(
+            "Failed to begin recording command buffer!");
     }
 
     vk::RenderPassBeginInfo renderPassInfo = {};
@@ -184,24 +227,9 @@ void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
 
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
-    // start draw call
-    //  reset viewport and scissor
-    vk::Viewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)swapchainExtent.width;
-    viewport.height = (float)swapchainExtent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vk::Rect2D scissor{};
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = swapchainExtent;
-    // setting viewport and scissor
-    commandBuffer.setViewport(0, 1, &viewport);
-    commandBuffer.setScissor(0, 1, &scissor);
-
-    // render
+    prepare_scene(commandBuffer);
+    int vertexCount = meshes->sizes.find(meshTypes::TRIANGLE)->second;
+    int firstVertex = meshes->offsets.find(meshTypes::TRIANGLE)->second;
     for (glm::vec3 position : scene->trianglePositions) {
 
         glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
@@ -211,7 +239,35 @@ void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
                                     vk::ShaderStageFlagBits::eVertex, 0,
                                     sizeof(objectData), &objectData);
 
-        commandBuffer.draw(3, 1, 0, 0);
+        commandBuffer.draw(vertexCount, 1, firstVertex, 0);
+    }
+
+    vertexCount = meshes->sizes.find(meshTypes::SQUARE)->second;
+    firstVertex = meshes->offsets.find(meshTypes::SQUARE)->second;
+    for (glm::vec3 position : scene->squarePositions) {
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+        vkUtil::ObjectData objectData;
+        objectData.model = model;
+        commandBuffer.pushConstants(pipelineLayout,
+                                    vk::ShaderStageFlagBits::eVertex, 0,
+                                    sizeof(objectData), &objectData);
+
+        commandBuffer.draw(vertexCount, 1, firstVertex, 0);
+    }
+
+    vertexCount = meshes->sizes.find(meshTypes::STAR)->second;
+    firstVertex = meshes->offsets.find(meshTypes::STAR)->second;
+    for (glm::vec3 position : scene->starPositions) {
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+        vkUtil::ObjectData objectData;
+        objectData.model = model;
+        commandBuffer.pushConstants(pipelineLayout,
+                                    vk::ShaderStageFlagBits::eVertex, 0,
+                                    sizeof(objectData), &objectData);
+
+        commandBuffer.draw(vertexCount, 1, firstVertex, 0);
     }
 
     commandBuffer.endRenderPass();
@@ -220,9 +276,8 @@ void Engine::record_draw_commands(vk::CommandBuffer commandBuffer,
         commandBuffer.end();
     } catch (vk::SystemError err) {
 
-        if (debugMode) {
-            std::cout << "failed to record command buffer!" << std::endl;
-        }
+        vkLogging::Logger::get_logger()->print(
+            "failed to record command buffer!");
     }
 }
 
@@ -279,10 +334,8 @@ void Engine::render(Scene* scene) {
     try {
         graphicsQueue.submit(submitInfo, swapchainFrames[frameNumber].inFlight);
     } catch (vk::SystemError err) {
-
-        if (debugMode) {
-            std::cout << "failed to submit draw command buffer!" << std::endl;
-        }
+        vkLogging::Logger::get_logger()->print(
+            "failed to submit draw command buffer!");
     }
 
     vk::PresentInfoKHR presentInfo = {};
@@ -332,9 +385,7 @@ Engine::~Engine() {
 
     device.waitIdle();
 
-    if (debugMode) {
-        std::cout << "Goodbye see you!\n";
-    }
+    vkLogging::Logger::get_logger()->print("Goodbye see you!");
 
     device.destroyCommandPool(commandPool);
 
@@ -344,10 +395,12 @@ Engine::~Engine() {
 
     cleanup_swapchain();
 
+    delete meshes;
+
     device.destroy();
 
     instance.destroySurfaceKHR(surface);
-    if (debugMode) {
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
         instance.destroyDebugUtilsMessengerEXT(debugMessenger, nullptr, dldi);
     }
     /*

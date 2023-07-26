@@ -1,8 +1,12 @@
 add_executable(MyVulkanRHI
-Engine.cpp
 main.cpp
-VulkanApplication.cpp
-Scene.cpp)
+control/Logging.cpp
+model/Scene.cpp
+view/VKUtil/Memory.cpp
+model/VertexMenagerie.cpp
+control/VulkanApplication.cpp
+view/Engine.cpp
+)
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(MyVulkanRHI Vulkan::Vulkan ${GLFW_LIBRARY})

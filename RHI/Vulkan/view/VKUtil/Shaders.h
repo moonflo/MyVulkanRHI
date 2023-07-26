@@ -7,16 +7,16 @@ namespace vkUtil {
 		Read a file.
 
 		\param filename a string representing the path to the file
-		\param debug whether the system is running in debug mode
 		\returns the contents as a vector of raw binary characters
 	*/
-std::vector<char> readFile(std::string filename, bool debug) {
+std::vector<char> readFile(std::string filename) {
 
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-    if (debug && !file.is_open()) {
-        std::cout << "[ERROR] Failed to load \"" << filename << "\""
-                  << std::endl;
+    if (!file.is_open()) {
+        std::stringstream message;
+        message << "Failed to load \"" << filename << "\"";
+        vkLogging::Logger::get_logger()->print(message.str());
     }
 
     size_t filesize{static_cast<size_t>(file.tellg())};
@@ -36,7 +36,7 @@ std::vector<char> readFile(std::string filename, bool debug) {
 		\param debug whether the system is running in debug mode
 		\returns the relative path form exe file, empty string if not found.
 	*/
-std::string relativePathSearching(std::string name, bool debug) {
+std::string relativePathSearching(std::string name) {
     // loop N times up the hierarchy, testing at each level
     std::string upPath;
     std::string fullPath;
@@ -44,18 +44,14 @@ std::string relativePathSearching(std::string name, bool debug) {
 
         fullPath.assign(upPath);
         fullPath.append(name);
-        if (debug) {
-            std::cout << "[INFO] Searching file in path: " << fullPath.c_str()
-                      << std::endl;
-        }
+        std::cout << "[INFO] Searching file in path: " << fullPath.c_str()
+                  << std::endl;
         // check in file is in here
         std::ifstream file(fullPath);
         if (file.good()) {
             file.close();
-            if (debug) {
-                std::cout << "[INFO] Found file in path: " << fullPath.c_str()
-                          << std::endl;
-            }
+            std::cout << "[INFO] Found file in path: " << fullPath.c_str()
+                      << std::endl;
             return fullPath;
             break;
         }
@@ -72,29 +68,27 @@ std::string relativePathSearching(std::string name, bool debug) {
 		\param debug whether the system is running in debug mode
 		\returns the created shader module
 	*/
-vk::ShaderModule createModule(std::string filename, vk::Device device,
-                              bool debug) {
-    std::string newPath = relativePathSearching(filename, debug);
+vk::ShaderModule createModule(std::string filename, vk::Device device) {
+    std::string newPath = relativePathSearching(filename);
     if (newPath == "") {
-        if (debug) {
-            std::cout << "[ERROR] Failed to locating file: " << newPath
-                      << std::endl;
-        }
+        std::cout << "[ERROR] Failed to locating file: " << newPath
+                  << std::endl;
     } else {
         filename = newPath;
     }
-    std::vector<char> sourceCode = readFile(filename, debug);
+    std::vector<char> sourceCode = readFile(filename);
     vk::ShaderModuleCreateInfo moduleInfo = {};
     moduleInfo.flags = vk::ShaderModuleCreateFlags();
     moduleInfo.codeSize = sourceCode.size();
     moduleInfo.pCode = reinterpret_cast<const uint32_t*>(sourceCode.data());
+
     try {
         return device.createShaderModule(moduleInfo);
     } catch (vk::SystemError err) {
-        if (debug) {
-            std::cout << "Failed to create shader module for \"" << filename
-                      << "\"" << std::endl;
-        }
+        std::stringstream message;
+        message << "Failed to create shader module for \"" << filename << "\"";
+        vkLogging::Logger::get_logger()->print(message.str());
     }
 }
+
 }  // namespace vkUtil

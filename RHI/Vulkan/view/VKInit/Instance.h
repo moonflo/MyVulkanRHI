@@ -9,18 +9,19 @@ namespace vkInit {
 
 		\param extensions a list of extension names being requested.
 		\param layers a list of layer names being requested.
-		\param debug whether to log error messages.
 		\returns whether all of the extensions and layers are supported.
 	*/
 bool supported(std::vector<const char*>& extensions,
-               std::vector<const char*>& layers, bool debug) {
+               std::vector<const char*>& layers) {
 
+    std::stringstream message;
     //check extension support
     std::vector<vk::ExtensionProperties> supportedExtensions =
         vk::enumerateInstanceExtensionProperties();
 
-    if (debug) {
-        std::cout << "Device can support the following extensions:\n";
+    vkLogging::Logger::get_logger()->print(
+        "Device can support the following extensions:");
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
         for (vk::ExtensionProperties supportedExtension : supportedExtensions) {
             std::cout << '\t' << supportedExtension.extensionName << '\n';
         }
@@ -32,17 +33,15 @@ bool supported(std::vector<const char*>& extensions,
         for (vk::ExtensionProperties supportedExtension : supportedExtensions) {
             if (strcmp(extension, supportedExtension.extensionName) == 0) {
                 found = true;
-                if (debug) {
-                    std::cout << "Extension \"" << extension
-                              << "\" is supported!\n";
-                }
+                message << "Extension \"" << extension << "\" is supported!";
+                vkLogging::Logger::get_logger()->print(message.str());
+                message.str("");
             }
         }
         if (!found) {
-            if (debug) {
-                std::cout << "Extension \"" << extension
-                          << "\" is not supported!\n";
-            }
+            message << "Extension \"" << extension << "\" is not supported!";
+            vkLogging::Logger::get_logger()->print(message.str());
+            message.str("");
             return false;
         }
     }
@@ -51,8 +50,9 @@ bool supported(std::vector<const char*>& extensions,
     std::vector<vk::LayerProperties> supportedLayers =
         vk::enumerateInstanceLayerProperties();
 
-    if (debug) {
-        std::cout << "Device can support the following layers:\n";
+    vkLogging::Logger::get_logger()->print(
+        "Device can support the following layers:");
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
         for (vk::LayerProperties supportedLayer : supportedLayers) {
             std::cout << '\t' << supportedLayer.layerName << '\n';
         }
@@ -63,15 +63,15 @@ bool supported(std::vector<const char*>& extensions,
         for (vk::LayerProperties supportedLayer : supportedLayers) {
             if (strcmp(layer, supportedLayer.layerName) == 0) {
                 found = true;
-                if (debug) {
-                    std::cout << "Layer \"" << layer << "\" is supported!\n";
-                }
+                message << "Layer \"" << layer << "\" is supported!";
+                vkLogging::Logger::get_logger()->print(message.str());
+                message.str("");
             }
         }
         if (!found) {
-            if (debug) {
-                std::cout << "Layer \"" << layer << "\" is not supported!\n";
-            }
+            message << "Layer \"" << layer << "\" is not supported!";
+            vkLogging::Logger::get_logger()->print(message.str());
+            message.str("");
             return false;
         }
     }
@@ -82,15 +82,12 @@ bool supported(std::vector<const char*>& extensions,
 /**
 		Create a Vulkan instance.
 
-		\param debug whether the system is being run in debug mode.
 		\param applicationName the name of the application.
 		\returns the instance created.
 	*/
-vk::Instance make_instance(bool debug, const char* applicationName) {
+vk::Instance make_instance(const char* applicationName) {
 
-    if (debug) {
-        std::cout << "Making an instance...\n";
-    }
+    vkLogging::Logger::get_logger()->print("Making an instance...");
 
     /*
 		* An instance stores all per-application state info, it is a vulkan handle
@@ -117,7 +114,7 @@ vk::Instance make_instance(bool debug, const char* applicationName) {
     uint32_t version{0};
     vkEnumerateInstanceVersion(&version);
 
-    if (debug) {
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
         std::cout << "System can support vulkan Variant: "
                   << VK_API_VERSION_VARIANT(version)
                   << ", Major: " << VK_API_VERSION_MAJOR(version)
@@ -162,12 +159,12 @@ vk::Instance make_instance(bool debug, const char* applicationName) {
                                         glfwExtensions + glfwExtensionCount);
 
     //In order to hook in a custom validation callback
-    if (debug) {
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
         extensions.push_back("VK_EXT_debug_utils");
     }
 
-    if (debug) {
-        std::cout << "extensions to be requested:\n";
+    vkLogging::Logger::get_logger()->print("extensions to be requested:");
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
 
         for (const char* extensionName : extensions) {
             std::cout << "\t\"" << extensionName << "\"\n";
@@ -175,11 +172,11 @@ vk::Instance make_instance(bool debug, const char* applicationName) {
     }
 
     std::vector<const char*> layers;
-    if (debug) {
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
         layers.push_back("VK_LAYER_KHRONOS_validation");
     }
 
-    if (!supported(extensions, layers, debug)) {
+    if (!supported(extensions, layers)) {
         return nullptr;
     }
 
@@ -212,9 +209,7 @@ vk::Instance make_instance(bool debug, const char* applicationName) {
 			*/
         return vk::createInstance(createInfo);
     } catch (vk::SystemError err) {
-        if (debug) {
-            std::cout << "Failed to create Instance!\n";
-        }
+        vkLogging::Logger::get_logger()->print("Failed to create Instance!");
         return nullptr;
     }
 }

@@ -1,21 +1,19 @@
 #pragma once
 #include "Frame.h"
 #include "Scene.h"
+#include "VertexMenagerie.h"
 #include "VulkanConfig.h"
 
 class Engine {
 
    public:
-    Engine(int width, int height, GLFWwindow* window, bool debug);
+    Engine(int width, int height, GLFWwindow* window);
 
     ~Engine();
 
     void render(Scene* scene);
 
    private:
-    //whether to print debug messages in functions
-    bool debugMode = true;
-
     //glfw-related variables
     int width;
     int height;
@@ -49,6 +47,9 @@ class Engine {
     //Synchronization objects
     int maxFramesInFlight, frameNumber;
 
+    //asset pointers
+    VertexMenagerie* meshes;
+
     //instance setup
     void make_instance();
 
@@ -65,6 +66,10 @@ class Engine {
     void make_framebuffers();
     void make_frame_sync_objects();
 
+    //asset creation
+    void make_assets();
+
+    void prepare_scene(vk::CommandBuffer commandBuffer);
     void record_draw_commands(vk::CommandBuffer commandBuffer,
                               uint32_t imageIndex, Scene* scene);
 

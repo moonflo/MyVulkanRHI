@@ -19,11 +19,11 @@ struct framebufferInput {
 
 		\param inputChunk required input for creation
 		\param frames the vector to be populated with the created framebuffers
-		\param debug whether the system is running in debug mode.
 	*/
 void make_framebuffers(framebufferInput inputChunk,
-                       std::vector<vkUtil::SwapChainFrame>& frames,
-                       bool debug) {
+                       std::vector<vkUtil::SwapChainFrame>& frames) {
+
+    std::stringstream message;
 
     for (int i = 0; i < frames.size(); ++i) {
 
@@ -42,14 +42,13 @@ void make_framebuffers(framebufferInput inputChunk,
             frames[i].framebuffer =
                 inputChunk.device.createFramebuffer(framebufferInfo);
 
-            if (debug) {
-                std::cout << "Created framebuffer for frame " << i << std::endl;
-            }
+            message << "Created framebuffer for frame " << i;
+            vkLogging::Logger::get_logger()->print(message.str());
+            message.str("");
         } catch (vk::SystemError err) {
-            if (debug) {
-                std::cout << "Failed to create framebuffer for frame " << i
-                          << std::endl;
-            }
+            message << "Failed to create framebuffer for frame " << i;
+            vkLogging::Logger::get_logger()->print(message.str());
+            message.str("");
         }
     }
 }

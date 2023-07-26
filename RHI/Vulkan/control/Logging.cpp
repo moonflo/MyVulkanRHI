@@ -1,116 +1,75 @@
-#pragma once
-#include "VulkanConfig.h"
+#include "Logging.h"
 
-namespace vkInit {
-
-/**
-		Logging callback function.
-
-		\param messageSeverity describes the severity level of the message
-		\param messageType describes the type of the message
-		\param pCallbackData standard data associated with the message
-		\param pUserData custom extra data which can be associated with the message
-		\returns whether to end program execution
-	*/
-VKAPI_ATTR VkBool32 VKAPI_CALL
-debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-              VkDebugUtilsMessageTypeFlagsEXT messageType,
-              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-              void* pUserData) {
-
-    /*
-		* Debug call back:
-		*
-		*	typedef enum VkDebugUtilsMessageSeverityFlagBitsEXT {
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT = 0x00000001,
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT = 0x00000010,
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT = 0x00000100,
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT = 0x00001000,
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
-		} VkDebugUtilsMessageSeverityFlagBitsEXT;
-
-		*	typedef enum VkDebugUtilsMessageTypeFlagBitsEXT {
-			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT = 0x00000001,
-			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT = 0x00000002,
-			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT = 0x00000004,
-			VK_DEBUG_UTILS_MESSAGE_TYPE_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
-		} VkDebugUtilsMessageTypeFlagBitsEXT;
-
-		*	typedef struct VkDebugUtilsMessengerCallbackDataEXT {
-			VkStructureType                              sType;
-			const void*                                  pNext;
-			VkDebugUtilsMessengerCallbackDataFlagsEXT    flags;
-			const char*                                  pMessageIdName;
-			int32_t                                      messageIdNumber;
-			const char*                                  pMessage;
-			uint32_t                                     queueLabelCount;
-			const VkDebugUtilsLabelEXT*                  pQueueLabels;
-			uint32_t                                     cmdBufLabelCount;
-			const VkDebugUtilsLabelEXT*                  pCmdBufLabels;
-			uint32_t                                     objectCount;
-			const VkDebugUtilsObjectNameInfoEXT*         pObjects;
-		} VkDebugUtilsMessengerCallbackDataEXT;
-
-		*/
-
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-    return VK_FALSE;
+namespace vkLogging {
+Logger* Logger::logger;
 }
 
-/**
-		Make a debug messenger
-
-		\param instance The Vulkan instance which will be debugged.
-		\param dldi dynamically loads instance based dispatch functions
-		\returns the created messenger
-	*/
-vk::DebugUtilsMessengerEXT make_debug_messenger(
-    vk::Instance& instance, vk::DispatchLoaderDynamic& dldi) {
-
-    /*
-		* DebugUtilsMessengerCreateInfoEXT( VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateFlagsEXT flags_           = {},
-                                        VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagsEXT messageSeverity_ = {},
-                                        VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagsEXT     messageType_     = {},
-                                        PFN_vkDebugUtilsMessengerCallbackEXT                    pfnUserCallback_ = {},
-                                        void * pUserData_ = {} )
-		*/
-
-    vk::DebugUtilsMessengerCreateInfoEXT createInfo =
-        vk::DebugUtilsMessengerCreateInfoEXT(
-            vk::DebugUtilsMessengerCreateFlagsEXT(),
-            vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-                vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
-            vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
-                vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-                vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-            debugCallback, nullptr);
-
-    return instance.createDebugUtilsMessengerEXT(createInfo, nullptr, dldi);
+void vkLogging::Logger::set_debug_mode(bool mode) {
+    debugMode = mode;
 }
 
-/**
-		Extract the transforms from the given bitmask.
+bool vkLogging::Logger::get_debug_mode() {
+    return debugMode;
+}
 
-		\param bits a bitmask describing various transforms
-		\returns a vector of strings describing the transforms
-	*/
-std::vector<std::string> log_transform_bits(vk::SurfaceTransformFlagsKHR bits) {
+vkLogging::Logger* vkLogging::Logger::get_logger() {
+    if (logger == nullptr) {
+        logger = new Logger();
+    }
+
+    return logger;
+}
+
+void vkLogging::Logger::print(std::string message) {
+
+    if (!debugMode) {
+        return;
+    }
+
+    std::cout << message << std::endl;
+}
+
+void vkLogging::Logger::print_list(std::vector<std::string> items) {
+
+    for (std::string item : items) {
+        std::cout << "\t\t" << item << std::endl;
+    }
+}
+/*
+		void log_device_properties(vk::PhysicalDevice physical_device);
+		void log_device_properties(vk::PhysicalDevice device);
+		void log_surface_capabilities(vk::SurfaceCapabilitiesKHR surfaceCapabilities);
+		void log_surface_format(vk::SurfaceFormatKHR surfaceFormat);
+	private:
+		std::array<int, 4> extract_version_number;
+		std::string extract_driver_version_nvidia;
+		std::string extract_driver_version_intel;
+		std::string extract_driver_version_standard;
+		void log_physical_device_limits(vk::PhysicalDeviceLimits limits);
+		std::vector<std::string> log_transform_bits(vk::SurfaceTransformFlagsKHR bits);
+		std::vector<std::string> log_alpha_composite_bits(vk::CompositeAlphaFlagsKHR bits);
+		std::vector<std::string> log_image_usage_bits(vk::ImageUsageFlags bits);
+		std::string log_present_mode(vk::PresentModeKHR presentMode);
+		bool debugMode;
+*/
+
+std::vector<std::string> vkLogging::log_transform_bits(
+    vk::SurfaceTransformFlagsKHR bits) {
     std::vector<std::string> result;
 
     /*
-			* typedef enum VkSurfaceTransformFlagBitsKHR {
-				VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR = 0x00000001,
-				VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR = 0x00000002,
-				VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR = 0x00000004,
-				VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR = 0x00000008,
-				VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR = 0x00000010,
-				VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR = 0x00000020,
-				VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR = 0x00000040,
-				VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR = 0x00000080,
-				VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR = 0x00000100,
-			} VkSurfaceTransformFlagBitsKHR;
-		*/
+		* typedef enum VkSurfaceTransformFlagBitsKHR {
+			VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR = 0x00000001,
+			VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR = 0x00000002,
+			VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR = 0x00000004,
+			VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR = 0x00000008,
+			VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR = 0x00000010,
+			VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR = 0x00000020,
+			VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR = 0x00000040,
+			VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR = 0x00000080,
+			VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR = 0x00000100,
+		} VkSurfaceTransformFlagBitsKHR;
+	*/
     if (bits & vk::SurfaceTransformFlagBitsKHR::eIdentity) {
         result.push_back("identity");
     }
@@ -143,12 +102,13 @@ std::vector<std::string> log_transform_bits(vk::SurfaceTransformFlagsKHR bits) {
 }
 
 /**
-		Extract the alpha composite blend modes from the given bitmask.
-
-		\param bits a bitmask describing a combination of alpha composite options.
-		\returns a vector of strings describing the options.
+	* Extract the alpha composite types contained within the given bitmask
+	*
+	* @param bits	the bitmask which holds various alpha composite modes
+	* @return		a vector of strings describing the alpha composite modes
 	*/
-std::vector<std::string> log_alpha_composite_bits(
+
+std::vector<std::string> vkLogging::log_alpha_composite_bits(
     vk::CompositeAlphaFlagsKHR bits) {
     std::vector<std::string> result;
 
@@ -180,12 +140,13 @@ std::vector<std::string> log_alpha_composite_bits(
 }
 
 /**
-		Extract image usage options.
-
-		\param bits a bitmask describing various image usages
-		\returns a vector of strings describing the image usages
+	* Extract the image usages contained within the given bitmask
+	*
+	* @param bits	the bitmask which holds various image usages
+	* @return		a vector of strings describing the image usages
 	*/
-std::vector<std::string> log_image_usage_bits(vk::ImageUsageFlags bits) {
+std::vector<std::string> vkLogging::log_image_usage_bits(
+    vk::ImageUsageFlags bits) {
     std::vector<std::string> result;
 
     /*
@@ -290,9 +251,12 @@ suitable for use as a fragment shading rate attachment or shading rate image");
 }
 
 /**
-		\returns a string description of the given present mode.
+	* Translate the given present mode to a dexcriptive string
+	*
+	* @param presentMode	an enum which describes the present mode
+	* @return				a description of the present mode
 	*/
-std::string log_present_mode(vk::PresentModeKHR presentMode) {
+std::string vkLogging::log_present_mode(vk::PresentModeKHR presentMode) {
     /*
 		* // Provided by VK_KHR_surface
 		typedef enum VkPresentModeKHR {
@@ -306,7 +270,6 @@ std::string log_present_mode(vk::PresentModeKHR presentMode) {
 			VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR = 1000111001,
 		} VkPresentModeKHR;
 		*/
-
     if (presentMode == vk::PresentModeKHR::eImmediate) {
         return "immediate: the presentation engine does not wait for a vertical blanking period \
 to update the current image, meaning this mode may result in visible tearing. No internal \
@@ -362,17 +325,16 @@ This mode may result in visible tearing if rendering to the image is not timed c
 }
 
 /**
-		Print out the properties of the given physical device.
-
-		\param device the physical device to investigate
+	* Print out some properties of a physical device
+	*
+	* @param device the physical device
 	*/
-void log_device_properties(const vk::PhysicalDevice& device) {
+void vkLogging::log_device_properties(const vk::PhysicalDevice& device) {
     /*
 		* void vkGetPhysicalDeviceProperties(
 			VkPhysicalDevice                            physicalDevice,
 			VkPhysicalDeviceProperties*                 pProperties);
 		*/
-
     vk::PhysicalDeviceProperties properties = device.getProperties();
 
     /*
@@ -388,7 +350,6 @@ void log_device_properties(const vk::PhysicalDevice& device) {
 			VkPhysicalDeviceSparseProperties    sparseProperties;
 			} VkPhysicalDeviceProperties;
 		*/
-
     std::cout << "Device name: " << properties.deviceName << '\n';
 
     std::cout << "Device type: ";
@@ -415,4 +376,82 @@ void log_device_properties(const vk::PhysicalDevice& device) {
     }
 }
 
-}  // namespace vkInit
+/**
+	* Debug call back function, called by validation layers
+	*/
+VKAPI_ATTR VkBool32 VKAPI_CALL vkLogging::debugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData) {
+
+    /*
+	* Debug call back:
+	*
+	*	typedef enum VkDebugUtilsMessageSeverityFlagBitsEXT {
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT = 0x00000001,
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT = 0x00000010,
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT = 0x00000100,
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT = 0x00001000,
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+	} VkDebugUtilsMessageSeverityFlagBitsEXT;
+
+	*	typedef enum VkDebugUtilsMessageTypeFlagBitsEXT {
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT = 0x00000001,
+		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT = 0x00000002,
+		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT = 0x00000004,
+		VK_DEBUG_UTILS_MESSAGE_TYPE_FLAG_BITS_MAX_ENUM_EXT = 0x7FFFFFFF
+	} VkDebugUtilsMessageTypeFlagBitsEXT;
+
+	*	typedef struct VkDebugUtilsMessengerCallbackDataEXT {
+		VkStructureType                              sType;
+		const void*                                  pNext;
+		VkDebugUtilsMessengerCallbackDataFlagsEXT    flags;
+		const char*                                  pMessageIdName;
+		int32_t                                      messageIdNumber;
+		const char*                                  pMessage;
+		uint32_t                                     queueLabelCount;
+		const VkDebugUtilsLabelEXT*                  pQueueLabels;
+		uint32_t                                     cmdBufLabelCount;
+		const VkDebugUtilsLabelEXT*                  pCmdBufLabels;
+		uint32_t                                     objectCount;
+		const VkDebugUtilsObjectNameInfoEXT*         pObjects;
+	} VkDebugUtilsMessengerCallbackDataEXT;
+
+	*/
+
+    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+
+    return VK_FALSE;
+}
+
+/**
+* Make a debug messenger
+*
+* @param instance	the vulkan instance which will own/call the messenger
+* @param dldi		the dispatch loader used to call the creation function
+* @return			the created debug messenger
+*/
+vk::DebugUtilsMessengerEXT vkLogging::make_debug_messenger(
+    vk::Instance& instance, vk::DispatchLoaderDynamic& dldi) {
+
+    /*
+	* DebugUtilsMessengerCreateInfoEXT( VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateFlagsEXT flags_           = {},
+									VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagsEXT messageSeverity_ = {},
+									VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagsEXT     messageType_     = {},
+									PFN_vkDebugUtilsMessengerCallbackEXT                    pfnUserCallback_ = {},
+									void * pUserData_ = {} )
+	*/
+
+    vk::DebugUtilsMessengerCreateInfoEXT createInfo =
+        vk::DebugUtilsMessengerCreateInfoEXT(
+            vk::DebugUtilsMessengerCreateFlagsEXT(),
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+            vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+            debugCallback, nullptr);
+
+    return instance.createDebugUtilsMessengerEXT(createInfo, nullptr, dldi);
+}

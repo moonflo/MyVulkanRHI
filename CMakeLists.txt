@@ -21,6 +21,12 @@ MESSAGE( STATUS "TARGET_ARCH:         " ${TARGET_ARCH})
 
 # INCLUDE all package
 include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/")
+include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/control")
+include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/model")
+include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/view")
+include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/view/VKInit")
+include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/view/VKMesh")
+include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/view/VKUtil")
 
 IF(${UNIX})
     set(MYGE_TARGET_PLATFORM "Linux")

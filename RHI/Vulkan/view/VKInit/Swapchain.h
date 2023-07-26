@@ -33,12 +33,10 @@ struct SwapChainBundle {
 
 		\param device the physical device
 		\param surface the window surface which will use the swapchain
-		\param debug whether the system is running in debug mode
 		\returns a struct holding the details
 	*/
 SwapChainSupportDetails query_swapchain_support(vk::PhysicalDevice device,
-                                                vk::SurfaceKHR surface,
-                                                bool debug) {
+                                                vk::SurfaceKHR surface) {
     SwapChainSupportDetails support;
 
     /*
@@ -56,7 +54,7 @@ SwapChainSupportDetails query_swapchain_support(vk::PhysicalDevice device,
 		} VkSurfaceCapabilitiesKHR;
 		*/
     support.capabilities = device.getSurfaceCapabilitiesKHR(surface);
-    if (debug) {
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
         std::cout
             << "Swapchain can support the following surface capabilities:\n";
 
@@ -92,36 +90,29 @@ SwapChainSupportDetails query_swapchain_support(vk::PhysicalDevice device,
                   << support.capabilities.maxImageArrayLayers << '\n';
 
         std::cout << "\tsupported transforms:\n";
-        std::vector<std::string> stringList =
-            log_transform_bits(support.capabilities.supportedTransforms);
-        for (std::string line : stringList) {
-            std::cout << "\t\t" << line << '\n';
-        }
+        std::vector<std::string> stringList = vkLogging::log_transform_bits(
+            support.capabilities.supportedTransforms);
+        vkLogging::Logger::get_logger()->print_list(stringList);
 
         std::cout << "\tcurrent transform:\n";
-        stringList = log_transform_bits(support.capabilities.currentTransform);
-        for (std::string line : stringList) {
-            std::cout << "\t\t" << line << '\n';
-        }
+        stringList = vkLogging::log_transform_bits(
+            support.capabilities.currentTransform);
+        vkLogging::Logger::get_logger()->print_list(stringList);
 
         std::cout << "\tsupported alpha operations:\n";
-        stringList = log_alpha_composite_bits(
+        stringList = vkLogging::log_alpha_composite_bits(
             support.capabilities.supportedCompositeAlpha);
-        for (std::string line : stringList) {
-            std::cout << "\t\t" << line << '\n';
-        }
+        vkLogging::Logger::get_logger()->print_list(stringList);
 
         std::cout << "\tsupported image usage:\n";
-        stringList =
-            log_image_usage_bits(support.capabilities.supportedUsageFlags);
-        for (std::string line : stringList) {
-            std::cout << "\t\t" << line << '\n';
-        }
+        stringList = vkLogging::log_image_usage_bits(
+            support.capabilities.supportedUsageFlags);
+        vkLogging::Logger::get_logger()->print_list(stringList);
     }
 
     support.formats = device.getSurfaceFormatsKHR(surface);
 
-    if (debug) {
+    if (vkLogging::Logger::get_logger()->get_debug_mode()) {
 
         for (vk::SurfaceFormatKHR supportedFormat : support.formats) {
             /*
@@ -141,7 +132,7 @@ SwapChainSupportDetails query_swapchain_support(vk::PhysicalDevice device,
     support.presentModes = device.getSurfacePresentModesKHR(surface);
 
     for (vk::PresentModeKHR presentMode : support.presentModes) {
-        std::cout << '\t' << log_present_mode(presentMode) << '\n';
+        std::cout << '\t' << vkLogging::log_present_mode(presentMode) << '\n';
     }
     return support;
 }
@@ -219,16 +210,15 @@ vk::Extent2D choose_swapchain_extent(uint32_t width, uint32_t height,
 		\param surface the window surface to use the swapchain with
 		\param width the requested width
 		\param height the requested height
-		\param debug whether the system is running in debug mode
 		\returns a struct holding the swapchain and other associated data structures
 	*/
 SwapChainBundle create_swapchain(vk::Device logicalDevice,
                                  vk::PhysicalDevice physicalDevice,
-                                 vk::SurfaceKHR surface, int width, int height,
-                                 bool debug) {
+                                 vk::SurfaceKHR surface, int width,
+                                 int height) {
 
     SwapChainSupportDetails support =
-        query_swapchain_support(physicalDevice, surface, debug);
+        query_swapchain_support(physicalDevice, surface);
 
     vk::SurfaceFormatKHR format =
         choose_swapchain_surface_format(support.formats);
@@ -268,7 +258,7 @@ SwapChainBundle create_swapchain(vk::Device logicalDevice,
         format.colorSpace, extent, 1, vk::ImageUsageFlagBits::eColorAttachment);
 
     vkUtil::QueueFamilyIndices indices =
-        vkUtil::findQueueFamilies(physicalDevice, surface, debug);
+        vkUtil::findQueueFamilies(physicalDevice, surface);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(),
                                      indices.presentFamily.value()};
 

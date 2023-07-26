@@ -1,4 +1,5 @@
 #pragma once
+#include "Mesh.h"
 #include "RenderStructs.h"
 #include "Shaders.h"
 #include "VulkanConfig.h"
@@ -31,10 +32,9 @@ struct GraphicsPipelineOutBundle {
 		push constants and descriptor set layouts which will be used.
 
 		\param device the logical device
-		\param debug whether the system is running in debug mode
 		\returns the created pipeline layout
 	*/
-vk::PipelineLayout make_pipeline_layout(vk::Device device, bool debug) {
+vk::PipelineLayout make_pipeline_layout(vk::Device device) {
 
     vk::PipelineLayoutCreateInfo layoutInfo;
     layoutInfo.flags = vk::PipelineLayoutCreateFlags();
@@ -50,9 +50,8 @@ vk::PipelineLayout make_pipeline_layout(vk::Device device, bool debug) {
     try {
         return device.createPipelineLayout(layoutInfo);
     } catch (vk::SystemError err) {
-        if (debug) {
-            std::cout << "Failed to create pipeline layout!" << std::endl;
-        }
+        vkLogging::Logger::get_logger()->print(
+            "Failed to create pipeline layout!");
     }
 }
 
@@ -62,11 +61,10 @@ vk::PipelineLayout make_pipeline_layout(vk::Device device, bool debug) {
 
 		\param device the logical device
 		\param swapchainImageFormat the image format chosen for the swapchain images
-		\param debug whether the system is running in debug mode
 		\returns the created renderpass
 	*/
 vk::RenderPass make_renderpass(vk::Device device,
-                               vk::Format swapchainImageFormat, bool debug) {
+                               vk::Format swapchainImageFormat) {
 
     //Define a general attachment, with its load/store operations
     vk::AttachmentDescription colorAttachment = {};
@@ -102,9 +100,7 @@ vk::RenderPass make_renderpass(vk::Device device,
     try {
         return device.createRenderPass(renderpassInfo);
     } catch (vk::SystemError err) {
-        if (debug) {
-            std::cout << "Failed to create renderpass!" << std::endl;
-        }
+        vkLogging::Logger::get_logger()->print("Failed to create renderpass!");
     }
 }
 
@@ -112,11 +108,10 @@ vk::RenderPass make_renderpass(vk::Device device,
 		Make a graphics pipeline, along with renderpass and pipeline layout
 
 		\param specification the struct holding input data, as specified at the top of the file.
-		\param debug whether the system is running in debug mode
 		\returns the bundle of data structures created
 	*/
 GraphicsPipelineOutBundle create_graphics_pipeline(
-    GraphicsPipelineInBundle& specification, bool debug) {
+    GraphicsPipelineInBundle& specification) {
     /*
 		* Build and return a graphics pipeline based on the given info.
 		*/
@@ -129,10 +124,16 @@ GraphicsPipelineOutBundle create_graphics_pipeline(
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
 
     //Vertex Input
+    vk::VertexInputBindingDescription bindingDescription =
+        vkMesh::getPosColorBindingDescription();
+    std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions =
+        vkMesh::getPosColorAttributeDescriptions();
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.flags = vk::PipelineVertexInputStateCreateFlags();
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = 2;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
 
     //Input Assembly
@@ -142,11 +143,9 @@ GraphicsPipelineOutBundle create_graphics_pipeline(
     pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
 
     //Vertex Shader
-    if (debug) {
-        std::cout << "Create vertex shader module" << std::endl;
-    }
+    vkLogging::Logger::get_logger()->print("Create vertex shader module");
     vk::ShaderModule vertexShader = vkUtil::createModule(
-        specification.vertexFilepath, specification.device, debug);
+        specification.vertexFilepath, specification.device);
     vk::PipelineShaderStageCreateInfo vertexShaderInfo = {};
     vertexShaderInfo.flags = vk::PipelineShaderStageCreateFlags();
     vertexShaderInfo.stage = vk::ShaderStageFlagBits::eVertex;
@@ -154,21 +153,25 @@ GraphicsPipelineOutBundle create_graphics_pipeline(
     vertexShaderInfo.pName = "main";
     shaderStages.push_back(vertexShaderInfo);
 
-    // dynamicStates viewport and scissor
-    std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport,
-                                                   vk::DynamicState::eScissor};
-    vk::PipelineDynamicStateCreateInfo dynamicState{};
-    dynamicState.flags = vk::PipelineDynamicStateCreateFlags();
-    dynamicState.dynamicStateCount =
-        static_cast<uint32_t>(dynamicStates.size());
-    dynamicState.pDynamicStates = dynamicStates.data();
-
-    vk::PipelineViewportStateCreateInfo viewportState{};
+    //Viewport and Scissor
+    vk::Viewport viewport = {};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)specification.swapchainExtent.width;
+    viewport.height = (float)specification.swapchainExtent.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vk::Rect2D scissor = {};
+    scissor.offset.x = 0.0f;
+    scissor.offset.y = 0.0f;
+    scissor.extent = specification.swapchainExtent;
+    vk::PipelineViewportStateCreateInfo viewportState = {};
     viewportState.flags = vk::PipelineViewportStateCreateFlags();
     viewportState.viewportCount = 1;
+    viewportState.pViewports = &viewport;
     viewportState.scissorCount = 1;
+    viewportState.pScissors = &scissor;
     pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pDynamicState = &dynamicState;
 
     //Rasterizer
     vk::PipelineRasterizationStateCreateInfo rasterizer = {};
@@ -186,11 +189,9 @@ GraphicsPipelineOutBundle create_graphics_pipeline(
     pipelineInfo.pRasterizationState = &rasterizer;
 
     //Fragment Shader
-    if (debug) {
-        std::cout << "Create fragment shader module" << std::endl;
-    }
+    vkLogging::Logger::get_logger()->print("Create fragment shader module");
     vk::ShaderModule fragmentShader = vkUtil::createModule(
-        specification.fragmentFilepath, specification.device, debug);
+        specification.fragmentFilepath, specification.device);
     vk::PipelineShaderStageCreateInfo fragmentShaderInfo = {};
     fragmentShaderInfo.flags = vk::PipelineShaderStageCreateFlags();
     fragmentShaderInfo.stage = vk::ShaderStageFlagBits::eFragment;
@@ -227,19 +228,15 @@ GraphicsPipelineOutBundle create_graphics_pipeline(
     pipelineInfo.pColorBlendState = &colorBlending;
 
     //Pipeline Layout
-    if (debug) {
-        std::cout << "Create Pipeline Layout" << std::endl;
-    }
+    vkLogging::Logger::get_logger()->print("Create Pipeline Layout");
     vk::PipelineLayout pipelineLayout =
-        make_pipeline_layout(specification.device, debug);
+        make_pipeline_layout(specification.device);
     pipelineInfo.layout = pipelineLayout;
 
     //Renderpass
-    if (debug) {
-        std::cout << "Create RenderPass" << std::endl;
-    }
+    vkLogging::Logger::get_logger()->print("Create RenderPass");
     vk::RenderPass renderpass = make_renderpass(
-        specification.device, specification.swapchainImageFormat, debug);
+        specification.device, specification.swapchainImageFormat);
     pipelineInfo.renderPass = renderpass;
     pipelineInfo.subpass = 0;
 
@@ -247,18 +244,14 @@ GraphicsPipelineOutBundle create_graphics_pipeline(
     pipelineInfo.basePipelineHandle = nullptr;
 
     //Make the Pipeline
-    if (debug) {
-        std::cout << "Create Graphics Pipeline" << std::endl;
-    }
+    vkLogging::Logger::get_logger()->print("Create Graphics Pipeline");
     vk::Pipeline graphicsPipeline;
     try {
         graphicsPipeline =
             (specification.device.createGraphicsPipeline(nullptr, pipelineInfo))
                 .value;
     } catch (vk::SystemError err) {
-        if (debug) {
-            std::cout << "Failed to create Pipeline" << std::endl;
-        }
+        vkLogging::Logger::get_logger()->print("Failed to create Pipeline");
     }
 
     GraphicsPipelineOutBundle output;
