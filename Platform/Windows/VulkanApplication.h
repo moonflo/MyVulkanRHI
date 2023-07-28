@@ -3,7 +3,7 @@
 #include "VulkanConfig.h"
 #include "VulkanGraphicsManager.h"
 
-class App {
+class VulkanApplication {
 
    private:
     VulkanGraphicsManager* graphicsEngine;
@@ -19,7 +19,7 @@ class App {
     void calculateFrameRate();
 
    public:
-    App(int width, int height, bool debug);
-    ~App();
+    VulkanApplication(int width, int height, bool debug);
+    ~VulkanApplication();
     void run();
 };
