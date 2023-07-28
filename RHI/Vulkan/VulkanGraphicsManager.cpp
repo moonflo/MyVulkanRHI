@@ -113,11 +113,18 @@ void VulkanGraphicsManager::recreate_swapchain() {
 void VulkanGraphicsManager::make_descriptor_set_layouts() {
 
     //Binding once per frame
+    // count is the descriptor set count
     vkInit::descriptorSetLayoutData bindings;
     bindings.count = 1;
 
+    /*
+    * 看起来，一个描述符池里面用的是相同的描述符，此处设置了描述符池位置为0，绑定内容为
+    * UBO（但是没有讲UBO的大小等信息），然后UBO的数量为1，绑定到的阶段为顶点阶段。
+    */
+
     bindings.indices.push_back(0);
     bindings.types.push_back(vk::DescriptorType::eUniformBuffer);
+    // counts is the descriptor count
     bindings.counts.push_back(1);
     bindings.stages.push_back(vk::ShaderStageFlagBits::eVertex);
 

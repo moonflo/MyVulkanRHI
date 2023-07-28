@@ -20,7 +20,7 @@ VulkanApplication::VulkanApplication(int width, int height, bool debug) {
 }
 
 /**
-* Build the VulkanVulkanApplicationlication's window (using glfw)
+* Build the VulkanApplication's window (using glfw)
 * 
 * @param width		the width of the window
 * @param height		the height of the window
