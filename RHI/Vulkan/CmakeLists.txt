@@ -1,7 +1,22 @@
-add_executable(MyVulkanRHI
-Engine.cpp
-main.cpp
-VulkanApplication.cpp)
+set(SOURCE_VulkanGraphicsManager
+    vkImage/Cubemap.cpp
+    vkImage/Image.cpp
+    vkImage/Texture.cpp
+    vkInit/DEscriptors.cpp
+    vkInit/Pipeline.cpp
+    vkMesh/obj_mesh.cpp
+    vkMesh/vertex_menagerie.cpp
+    vkUtil/Memory.cpp
+    vkUtil/Shaders.cpp
+    vkUtil/Frame.cpp
+    vkUtil/single_time_commands.cpp
+)
+
+add_library(MyVulkanRHI
+    VulkanGraphicsManager.cpp
+    VulkanConfig.cpp
+    ${SOURCE_VulkanGraphicsManager}
+)
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(MyVulkanRHI Vulkan::Vulkan ${GLFW_LIBRARY})
