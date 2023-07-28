@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 3.1)
 project (MyVulkanRHI)
 
 set (CMAKE_C_STANDARD 99)
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/Platform")
@@ -21,66 +21,25 @@ MESSAGE( STATUS "TARGET_ARCH:         " ${TARGET_ARCH})
 
 # INCLUDE all package
 include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/")
-include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/control")
-include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/model")
-include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/view")
-include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/view/VKInit")
-include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/view/VKMesh")
-include_directories("${PROJECT_SOURCE_DIR}/RHI/Vulkan/view/VKUtil")
-
+include_directories("${PROJECT_SOURCE_DIR}/Framework/Interface")
+include_directories("${PROJECT_SOURCE_DIR}/Framework/Common")
 IF(${UNIX})
     set(MYGE_TARGET_PLATFORM "Linux")
 ELSEIF(${WIN32})
     set(MYGE_TARGET_PLATFORM "Windows")
 ENDIF(${UNIX})
-# include_directories("${PROJECT_SOURCE_DIR}/Platform/${MYGE_TARGET_PLATFORM}")
+include_directories("${PROJECT_SOURCE_DIR}/Platform/${MYGE_TARGET_PLATFORM}")
 
 set(MYGE_EXTERNAL_ROOT ${PROJECT_SOURCE_DIR}/External/${MYGE_TARGET_PLATFORM}/)
 include_directories("${MYGE_EXTERNAL_ROOT}include")
-# include_directories("${MYGE_EXTERNAL_ROOT}include/libpng16")
-# include_directories("${MYGE_EXTERNAL_ROOT}include/crossguid")
+
 
 set(MYGE_EXTERNAL_LIBRARY_PATH ${MYGE_EXTERNAL_ROOT}Lib/)
 find_library(GLFW_LIBRARY glfw3 PATHS ${MYGE_EXTERNAL_LIBRARY_PATH})
-# find_library(OPENGEX_LIBRARY OpenGEX PATHS ${MYGE_EXTERNAL_LIBRARY_PATH})
-# find_library(XG_LIBRARY crossguid-dgb PATHS ${MYGE_EXTERNAL_LIBRARY_PATH})
-# find_library(ZLIB_LIBRARY NAMES zlibd PATHS ${MYGE_EXTERNAL_LIBRARY_PATH} NO_CMAKE_FIND_ROOT_PATH NO_SYSTEM_ENVIRONMENT_PATH)
 
-# include(CTest)
-# include(CheckCXXSourceCompiles)
-# include(PlatformDependencies)
-
-# CHECK_CXX_SOURCE_COMPILES(
-# "#include <memory>
-
-# int main(int argc, char** argv)
-# {
-#     std::unique_ptr<int> my_int = std::make_unique<int>();
-#     *my_int = 0;
-#     return *my_int;
-# }
-# "
-#  HAVE_MAKE_UNIQUE)
-
-# CHECK_CXX_SOURCE_COMPILES(
-# "#include <algorithm>
-
-# int main(int argc, char** argv)
-# {
-#     int result = -1;
-#     result = std::clamp(result, 0, 1);
-#     return result;
-# }
-# "
-#  HAVE_CLAMP)
-
-# configure_file(${PROJECT_SOURCE_DIR}/config.h.in ${PROJECT_SOURCE_DIR}/config.h)
-# add_subdirectory(Framework)
-# add_subdirectory(Platform)
+add_subdirectory(Framework)
+add_subdirectory(Platform)
 add_subdirectory(RHI)
-# add_subdirectory(m_test)
-
-
 
 # ---------------------------------------------------------------------------------
 # ------------------------- Begin Generic CMake Variable Logging ------------------

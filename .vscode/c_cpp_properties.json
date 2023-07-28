@@ -6,14 +6,12 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/RHI",
                 "${workspaceFolder}/RHI/Vulkan",
-                "${workspaceFolder}/RHI/Vulkan/control",
-                "${workspaceFolder}/RHI/Vulkan/model",
-                "${workspaceFolder}/RHI/Vulkan/view",
-                "${workspaceFolder}/RHI/Vulkan/view/VKInit",
-                "${workspaceFolder}/RHI/Vulkan/view/VKMesh",
-                "${workspaceFolder}/RHI/Vulkan/view/VKUtil",
+                "${workspaceFolder}/RHI/Vulkan/VKInit",
+                "${workspaceFolder}/RHI/Vulkan/VKMesh",
+                "${workspaceFolder}/RHI/Vulkan/VKUtil",
                 "${workspaceFolder}/Framework/Interface",
                 "${workspaceFolder}/Framework/common",
+                "${workspaceFolder}/Platform/Windows",
                 "${workspaceFolder}/External/Windows/include/**",
                 "${workspaceFolder}/External/Windows/include"
             ],
@@ -24,7 +22,7 @@
             ],
             "compilerPath": "C:\\office_software\\mingw64\\bin\\clang.exe",
             "cStandard": "c17",
-            "cppStandard": "gnu++17",
+            "cppStandard": "gnu++20",
             "intelliSenseMode": "windows-clang-x64"
         }
     ],
