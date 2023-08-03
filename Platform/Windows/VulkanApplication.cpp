@@ -2,13 +2,13 @@
 #include "Logging.h"
 
 /**
-* Construct a new App.
+* Construct a new VulkanApplication.
 * 
 * @param width	the width of the window
 * @param height the height of the window
-* @param debug	whether to run the app with vulkan validation layers and extra print statements
+* @param debug	whether to run the VulkanApplication with vulkan validation layers and extra print statements
 */
-App::App(int width, int height, bool debug) {
+VulkanApplication::VulkanApplication(int width, int height, bool debug) {
 
     vkLogging::Logger::get_logger()->set_debug_mode(debug);
 
@@ -20,13 +20,13 @@ App::App(int width, int height, bool debug) {
 }
 
 /**
-* Build the App's window (using glfw)
+* Build the VulkanVulkanApplicationlication's window (using glfw)
 * 
 * @param width		the width of the window
 * @param height		the height of the window
 * @param debugMode	whether to make extra print statements
 */
-void App::build_glfw_window(int width, int height) {
+void VulkanApplication::build_glfw_window(int width, int height) {
 
     std::stringstream message;
 
@@ -52,9 +52,9 @@ void App::build_glfw_window(int width, int height) {
 }
 
 /**
-* Start the App's main loop
+* Start the VulkanApplication's main loop
 */
-void App::run() {
+void VulkanApplication::run() {
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -64,9 +64,9 @@ void App::run() {
 }
 
 /**
-* Calculates the App's framerate and updates the window title
+* Calculates the VulkanApplication's framerate and updates the window title
 */
-void App::calculateFrameRate() {
+void VulkanApplication::calculateFrameRate() {
     currentTime = glfwGetTime();
     double delta = currentTime - lastTime;
 
@@ -84,9 +84,9 @@ void App::calculateFrameRate() {
 }
 
 /**
-* App destructor.
+* VulkanApplication destructor.
 */
-App::~App() {
+VulkanApplication::~VulkanApplication() {
     delete graphicsEngine;
     delete scene;
 }

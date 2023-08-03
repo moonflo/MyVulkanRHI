@@ -3,6 +3,8 @@
 #include "VulkanConfig.h"
 #include "vkImage/Cubemap.h"
 #include "vkImage/Texture.h"
+#include "vkJob/Job.h"
+#include "vkJob/worker_thread.h"
 #include "vkMesh/vertex_menagerie.h"
 #include "vkUtil/Frame.h"
 
@@ -63,6 +65,9 @@ class VulkanGraphicsManager {
     VertexMenagerie* meshes;
     std::unordered_map<meshTypes, vkImage::Texture*> materials;
     vkImage::CubeMap* cubemap;
+    vkJob::WorkQueue workQueue;
+    bool bWorkThreadDone = false;
+    std::vector<std::thread> workers;
 
     //instance setup
     void make_instance();
@@ -82,7 +87,9 @@ class VulkanGraphicsManager {
     void make_frame_resources();
 
     //asset creation
+    void make_worker_threads();
     void make_assets();
+    void end_worker_threads();
 
     void prepare_frame(uint32_t imageIndex, Scene* scene);
     void prepare_scene(vk::CommandBuffer commandBuffer);

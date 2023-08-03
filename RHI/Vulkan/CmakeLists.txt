@@ -10,6 +10,8 @@ set(SOURCE_VulkanGraphicsManager
     vkUtil/Shaders.cpp
     vkUtil/Frame.cpp
     vkUtil/single_time_commands.cpp
+    vkJob/Job.cpp
+    vkJob/worker_thread.cpp
 )
 
 add_library(MyVulkanRHI

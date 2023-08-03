@@ -28,8 +28,9 @@ VulkanGraphicsManager::VulkanGraphicsManager(int width, int height,
     make_pipelines();
 
     finalize_setup();
-
+    make_worker_threads();
     make_assets();
+    end_worker_threads();
 }
 
 void VulkanGraphicsManager::make_instance() {
@@ -114,23 +115,27 @@ void VulkanGraphicsManager::make_descriptor_set_layouts() {
 
     //Binding once per frame
     vkInit::descriptorSetLayoutData bindings;
+    /*
+    一个set可以绑定多个描述符，这里设置了内容之后，在函数make_descriptor_set_layout中
+    一次性绑定好多个描述符于一个描述符集。
+    */
     bindings.count = 1;
 
     bindings.indices.push_back(0);
     bindings.types.push_back(vk::DescriptorType::eUniformBuffer);
     bindings.counts.push_back(1);
     bindings.stages.push_back(vk::ShaderStageFlagBits::eVertex);
-
     frameSetLayout[pipelineType::SKY] =
         vkInit::make_descriptor_set_layout(device, bindings);
 
+    /*
+    在standard阶段（第二个renderPass中），有两种输入数据，
+    */
     bindings.count = 2;
-
     bindings.indices.push_back(1);
     bindings.types.push_back(vk::DescriptorType::eStorageBuffer);
     bindings.counts.push_back(1);
     bindings.stages.push_back(vk::ShaderStageFlagBits::eVertex);
-
     frameSetLayout[pipelineType::STANDARD] =
         vkInit::make_descriptor_set_layout(device, bindings);
 
@@ -252,8 +257,23 @@ void VulkanGraphicsManager::make_frame_resources() {
     }
 }
 
-void VulkanGraphicsManager::make_assets() {
+void VulkanGraphicsManager::make_worker_threads() {
 
+    bWorkThreadDone = false;
+    size_t threadCount = std::thread::hardware_concurrency() - 1;
+
+    workers.reserve(threadCount);
+    vkInit::commandBufferInputChunk commandBufferInput = {device, commandPool,
+                                                          swapchainFrames};
+    for (size_t i = 0; i < threadCount; ++i) {
+        vk::CommandBuffer commandBuffer =
+            vkInit::make_command_buffer(commandBufferInput);
+        workers.push_back(std::thread(vkJob::WorkerThread(
+            workQueue, bWorkThreadDone, commandBuffer, graphicsQueue)));
+    }
+}
+
+void VulkanGraphicsManager::make_assets() {
     //Meshes
     meshes = new VertexMenagerie();
     std::unordered_map<meshTypes, std::vector<const char*>> model_filenames = {
@@ -267,21 +287,7 @@ void VulkanGraphicsManager::make_assets() {
         {meshTypes::GIRL, glm::rotate(glm::mat4(1.0f), glm::radians(180.0f),
                                       glm::vec3(0.0f, 0.0f, 1.0f))},
         {meshTypes::SKULL, glm::mat4(1.0f)}};
-
-    for (std::pair<meshTypes, std::vector<const char*>> pair :
-         model_filenames) {
-
-        vkMesh::ObjMesh model(pair.second[0], pair.second[1],
-                              preTransforms[pair.first]);
-        meshes->consume(pair.first, model.vertices, model.indices);
-    }
-
-    vertexBufferFinalizationChunk finalizationInfo;
-    finalizationInfo.logicalDevice = device;
-    finalizationInfo.physicalDevice = physicalDevice;
-    finalizationInfo.commandBuffer = mainCommandBuffer;
-    finalizationInfo.queue = graphicsQueue;
-    meshes->finalize(finalizationInfo);
+    std::unordered_map<meshTypes, vkMesh::ObjMesh> loaded_models;
 
     //Materials
 
@@ -298,6 +304,59 @@ void VulkanGraphicsManager::make_assets() {
     meshDescriptorPool = vkInit::make_descriptor_pool(
         device, static_cast<uint32_t>(filenames.size()) + 1, bindings);
 
+    //Submit loading work
+    workQueue.lock.lock();
+    std::vector<meshTypes> mesh_types = {
+        {meshTypes::GROUND, meshTypes::GIRL, meshTypes::SKULL}};
+    for (meshTypes type : mesh_types) {
+        vkImage::TextureInputChunk textureInfo;
+        textureInfo.logicalDevice = device;
+        textureInfo.physicalDevice = physicalDevice;
+        textureInfo.layout = meshSetLayout[pipelineType::STANDARD];
+        textureInfo.descriptorPool = meshDescriptorPool;
+        textureInfo.filenames = filenames[type];
+        materials[type] = new vkImage::Texture();
+        loaded_models[type] = vkMesh::ObjMesh();
+        workQueue.add(new vkJob::MakeTexture(materials[type], textureInfo));
+        workQueue.add(new vkJob::MakeModel(
+            loaded_models[type], model_filenames[type][0],
+            model_filenames[type][1], preTransforms[type]));
+    }
+    workQueue.lock.unlock();
+
+    //Work will be done by the background threads,
+    //we just need to wait.
+    std::cout << "Waiting for work to finish." << std::endl;
+    while (true) {
+
+        if (!workQueue.lock.try_lock()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            continue;
+        }
+
+        if (workQueue.done()) {
+            std::cout << "Work finished" << std::endl;
+            workQueue.clear();
+            workQueue.lock.unlock();
+            break;
+        }
+        workQueue.lock.unlock();
+    }
+
+    //Consume loaded meshes
+    for (std::pair<meshTypes, vkMesh::ObjMesh> pair : loaded_models) {
+        meshes->consume(pair.first, pair.second.vertices, pair.second.indices);
+    }
+
+    vertexBufferFinalizationChunk finalizationInfo;
+    finalizationInfo.logicalDevice = device;
+    finalizationInfo.physicalDevice = physicalDevice;
+    finalizationInfo.commandBuffer = mainCommandBuffer;
+    finalizationInfo.queue = graphicsQueue;
+    meshes->finalize(finalizationInfo);
+
+    //Proceed when work is done
+
     vkImage::TextureInputChunk textureInfo;
     textureInfo.commandBuffer = mainCommandBuffer;
     textureInfo.queue = graphicsQueue;
@@ -305,14 +364,7 @@ void VulkanGraphicsManager::make_assets() {
     textureInfo.physicalDevice = physicalDevice;
     textureInfo.layout = meshSetLayout[pipelineType::STANDARD];
     textureInfo.descriptorPool = meshDescriptorPool;
-
-    for (const auto& [object, filename] : filenames) {
-        textureInfo.filenames = filename;
-        materials[object] = new vkImage::Texture(textureInfo);
-    }
-
     textureInfo.layout = meshSetLayout[pipelineType::SKY];
-    textureInfo.descriptorPool = meshDescriptorPool;
     textureInfo.filenames = {{
         "Asset/Textures/sky_front.png",   //x+
         "Asset/Textures/sky_back.png",    //x-
@@ -322,6 +374,18 @@ void VulkanGraphicsManager::make_assets() {
         "Asset/Textures/sky_top.png",     //z-
     }};
     cubemap = new vkImage::CubeMap(textureInfo);
+}
+
+void VulkanGraphicsManager::end_worker_threads() {
+
+    bWorkThreadDone = true;
+    size_t threadCount = std::thread::hardware_concurrency() - 1;
+
+    for (size_t i = 0; i < threadCount; ++i) {
+        workers[i].join();
+    }
+
+    std::cout << "Threads ended successfully." << std::endl;
 }
 
 void VulkanGraphicsManager::prepare_frame(uint32_t imageIndex, Scene* scene) {
