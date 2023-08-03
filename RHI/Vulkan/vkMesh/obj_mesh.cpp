@@ -1,8 +1,8 @@
 #include "obj_mesh.h"
 #include "vkUtil/Shaders.h"
 
-vkMesh::ObjMesh::ObjMesh(const char* objFilepath, const char* mtlFilepath,
-                         glm::mat4 preTransform) {
+void vkMesh::ObjMesh::load(const char* objFilepath, const char* mtlFilepath,
+                           glm::mat4 preTransform) {
     std::string objPath, mtlPath;
     std::string newPath = vkUtil::relativePathSearching(objFilepath);
     if (newPath == "") {

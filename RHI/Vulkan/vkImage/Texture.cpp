@@ -5,7 +5,7 @@
 #include "vkUtil/Memory.h"
 #include "vkUtil/Shaders.h"
 
-vkImage::Texture::Texture(TextureInputChunk input) {
+void vkImage::Texture::load(TextureInputChunk input) {
 
     logicalDevice = input.logicalDevice;
     physicalDevice = input.physicalDevice;

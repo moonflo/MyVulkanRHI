@@ -7,7 +7,7 @@ namespace vkImage {
 class Texture {
 
    public:
-    Texture(TextureInputChunk input);
+    void load(TextureInputChunk input);
 
     void use(vk::CommandBuffer commandBuffer,
              vk::PipelineLayout pipelineLayout);

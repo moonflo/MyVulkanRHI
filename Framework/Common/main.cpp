@@ -2,7 +2,7 @@
 
 int main() {
 
-    App* myApp = new App(640, 480, true);
+    VulkanApplication* myApp = new VulkanApplication(640, 480, true);
 
     myApp->run();
     delete myApp;
