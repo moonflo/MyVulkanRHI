@@ -115,15 +115,12 @@ void VulkanGraphicsManager::make_descriptor_set_layouts() {
 
     //Binding once per frame
     vkInit::descriptorSetLayoutData bindings;
-
-<<<<<<< Updated upstream
-=======
     /*
     一个set可以绑定多个描述符，这里设置了内容之后，在函数make_descriptor_set_layout中
     一次性绑定好多个描述符于一个描述符集。
     */
     bindings.count = 1;
->>>>>>> Stashed changes
+
     bindings.indices.push_back(0);
     bindings.types.push_back(vk::DescriptorType::eUniformBuffer);
     bindings.counts.push_back(1);
